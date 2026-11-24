@@ -1,0 +1,263 @@
+# Style of every vanilla enchantment in item lore.
+#
+#   enabled      false = the enchantment is not written to the lore
+#   display      name shown (a language file can override it: enchant-names.<key>)
+#   description  text for %description% (a language file can override it: enchant-descriptions.<key>)
+#   format       the lore line. Placeholders: %name% %level_roman% %level_int% %description%
+#   priority     lower numbers are listed first
+#
+# Same format as the original RPGItemStyler, so existing files can be copied over.
+
+enchants:
+  sharpness:
+    enabled: true
+    display: "Sharpness"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 10
+  smite:
+    enabled: true
+    display: "Smite"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 11
+  bane_of_arthropods:
+    enabled: true
+    display: "Bane of Arthropods"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 12
+  fire_aspect:
+    enabled: true
+    display: "Fire Aspect"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 13
+  knockback:
+    enabled: true
+    display: "Knockback"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 14
+  looting:
+    enabled: true
+    display: "Looting"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 15
+  sweeping_edge:
+    enabled: true
+    display: "Sweeping Edge"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 16
+  density:
+    enabled: true
+    display: "Density"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 17
+  breach:
+    enabled: true
+    display: "Breach"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 18
+  wind_burst:
+    enabled: true
+    display: "Wind Burst"
+    description: ""
+    format: "&8» &c%name% &7%level_roman%"
+    priority: 19
+  power:
+    enabled: true
+    display: "Power"
+    description: ""
+    format: "&8» &6%name% &7%level_roman%"
+    priority: 20
+  punch:
+    enabled: true
+    display: "Punch"
+    description: ""
+    format: "&8» &6%name% &7%level_roman%"
+    priority: 21
+  flame:
+    enabled: true
+    display: "Flame"
+    description: ""
+    format: "&8» &6%name% &7%level_roman%"
+    priority: 22
+  infinity:
+    enabled: true
+    display: "Infinity"
+    description: ""
+    format: "&8» &6%name% &7%level_roman%"
+    priority: 23
+  multishot:
+    enabled: true
+    display: "Multishot"
+    description: ""
+    format: "&8» &6%name% &7%level_roman%"
+    priority: 24
+  quick_charge:
+    enabled: true
+    display: "Quick Charge"
+    description: ""
+    format: "&8» &6%name% &7%level_roman%"
+    priority: 25
+  piercing:
+    enabled: true
+    display: "Piercing"
+    description: ""
+    format: "&8» &6%name% &7%level_roman%"
+    priority: 26
+  impaling:
+    enabled: true
+    display: "Impaling"
+    description: ""
+    format: "&8» &3%name% &7%level_roman%"
+    priority: 30
+  riptide:
+    enabled: true
+    display: "Riptide"
+    description: ""
+    format: "&8» &3%name% &7%level_roman%"
+    priority: 31
+  loyalty:
+    enabled: true
+    display: "Loyalty"
+    description: ""
+    format: "&8» &3%name% &7%level_roman%"
+    priority: 32
+  channeling:
+    enabled: true
+    display: "Channeling"
+    description: ""
+    format: "&8» &3%name% &7%level_roman%"
+    priority: 33
+  protection:
+    enabled: true
+    display: "Protection"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 40
+  fire_protection:
+    enabled: true
+    display: "Fire Protection"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 41
+  blast_protection:
+    enabled: true
+    display: "Blast Protection"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 42
+  projectile_protection:
+    enabled: true
+    display: "Projectile Protection"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 43
+  feather_falling:
+    enabled: true
+    display: "Feather Falling"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 44
+  thorns:
+    enabled: true
+    display: "Thorns"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 45
+  respiration:
+    enabled: true
+    display: "Respiration"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 46
+  aqua_affinity:
+    enabled: true
+    display: "Aqua Affinity"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 47
+  depth_strider:
+    enabled: true
+    display: "Depth Strider"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 48
+  frost_walker:
+    enabled: true
+    display: "Frost Walker"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 49
+  soul_speed:
+    enabled: true
+    display: "Soul Speed"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 50
+  swift_sneak:
+    enabled: true
+    display: "Swift Sneak"
+    description: ""
+    format: "&8» &9%name% &7%level_roman%"
+    priority: 51
+  efficiency:
+    enabled: true
+    display: "Efficiency"
+    description: ""
+    format: "&8» &e%name% &7%level_roman%"
+    priority: 60
+  fortune:
+    enabled: true
+    display: "Fortune"
+    description: ""
+    format: "&8» &e%name% &7%level_roman%"
+    priority: 61
+  silk_touch:
+    enabled: true
+    display: "Silk Touch"
+    description: ""
+    format: "&8» &e%name% &7%level_roman%"
+    priority: 62
+  luck_of_the_sea:
+    enabled: true
+    display: "Luck of the Sea"
+    description: ""
+    format: "&8» &e%name% &7%level_roman%"
+    priority: 63
+  lure:
+    enabled: true
+    display: "Lure"
+    description: ""
+    format: "&8» &e%name% &7%level_roman%"
+    priority: 64
+  unbreaking:
+    enabled: true
+    display: "Unbreaking"
+    description: ""
+    format: "&8» &a%name% &7%level_roman%"
+    priority: 80
+  mending:
+    enabled: true
+    display: "Mending"
+    description: ""
+    format: "&8» &a%name% &7%level_roman%"
+    priority: 81
+  binding_curse:
+    enabled: true
+    display: "Curse of Binding"
+    description: ""
+    format: "&8» &4%name%"
+    priority: 200
+  vanishing_curse:
+    enabled: true
+    display: "Curse of Vanishing"
+    description: ""
+    format: "&8» &4%name%"
+    priority: 201

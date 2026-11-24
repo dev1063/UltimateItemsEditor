@@ -1,0 +1,205 @@
+# Style of every attribute modifier in item lore.
+# Keys are matched by their last part, so "attack_damage" also matches the old "generic.attack_damage".
+# You may also group them (generic: / player: ... ) like the original RPGItemStyler files.
+#
+#   enabled   false = the attribute is not written to the lore
+#   display   name shown (a language file can override it: attribute-names.<key>)
+#   icon      text for %icon%
+#   format    the lore line. Placeholders: %icon% %value% %display%
+#             values look like +5.00 (add), +10.00% (add scalar) or x1.10 (multiply)
+#   priority  lower numbers are listed first
+# Attributes that are not listed use a generic style.
+
+attributes:
+  attack_damage:
+    enabled: true
+    display: "Attack Damage"
+    icon: "⚔"
+    format: "&7%icon% &c%value% &7%display%"
+    priority: 10
+  attack_speed:
+    enabled: true
+    display: "Attack Speed"
+    icon: "⚡"
+    format: "&7%icon% &e%value% &7%display%"
+    priority: 11
+  attack_knockback:
+    enabled: true
+    display: "Attack Knockback"
+    icon: "➹"
+    format: "&7%icon% &6%value% &7%display%"
+    priority: 12
+  sweeping_damage_ratio:
+    enabled: true
+    display: "Sweeping Damage"
+    icon: "↻"
+    format: "&7%icon% &c%value% &7%display%"
+    priority: 13
+  armor:
+    enabled: true
+    display: "Armor"
+    icon: "▣"
+    format: "&7%icon% &9%value% &7%display%"
+    priority: 20
+  armor_toughness:
+    enabled: true
+    display: "Armor Toughness"
+    icon: "◆"
+    format: "&7%icon% &9%value% &7%display%"
+    priority: 21
+  knockback_resistance:
+    enabled: true
+    display: "Knockback Resistance"
+    icon: "⬣"
+    format: "&7%icon% &9%value% &7%display%"
+    priority: 22
+  explosion_knockback_resistance:
+    enabled: true
+    display: "Explosion Resistance"
+    icon: "✹"
+    format: "&7%icon% &9%value% &7%display%"
+    priority: 23
+  max_health:
+    enabled: true
+    display: "Max Health"
+    icon: "❤"
+    format: "&7%icon% &c%value% &7%display%"
+    priority: 30
+  max_absorption:
+    enabled: true
+    display: "Max Absorption"
+    icon: "✚"
+    format: "&7%icon% &e%value% &7%display%"
+    priority: 31
+  movement_speed:
+    enabled: true
+    display: "Movement Speed"
+    icon: "➤"
+    format: "&7%icon% &b%value% &7%display%"
+    priority: 40
+  sneaking_speed:
+    enabled: true
+    display: "Sneaking Speed"
+    icon: "➤"
+    format: "&7%icon% &b%value% &7%display%"
+    priority: 41
+  movement_efficiency:
+    enabled: true
+    display: "Movement Efficiency"
+    icon: "➤"
+    format: "&7%icon% &b%value% &7%display%"
+    priority: 42
+  water_movement_efficiency:
+    enabled: true
+    display: "Water Movement"
+    icon: "≈"
+    format: "&7%icon% &b%value% &7%display%"
+    priority: 43
+  flying_speed:
+    enabled: true
+    display: "Flying Speed"
+    icon: "✈"
+    format: "&7%icon% &b%value% &7%display%"
+    priority: 44
+  jump_strength:
+    enabled: true
+    display: "Jump Strength"
+    icon: "⇧"
+    format: "&7%icon% &a%value% &7%display%"
+    priority: 45
+  step_height:
+    enabled: true
+    display: "Step Height"
+    icon: "⇧"
+    format: "&7%icon% &a%value% &7%display%"
+    priority: 46
+  safe_fall_distance:
+    enabled: true
+    display: "Safe Fall Distance"
+    icon: "↓"
+    format: "&7%icon% &a%value% &7%display%"
+    priority: 47
+  fall_damage_multiplier:
+    enabled: true
+    display: "Fall Damage"
+    icon: "↓"
+    format: "&7%icon% &a%value% &7%display%"
+    priority: 48
+  gravity:
+    enabled: true
+    display: "Gravity"
+    icon: "⬇"
+    format: "&7%icon% &a%value% &7%display%"
+    priority: 49
+  block_break_speed:
+    enabled: true
+    display: "Block Break Speed"
+    icon: "⛏"
+    format: "&7%icon% &e%value% &7%display%"
+    priority: 50
+  mining_efficiency:
+    enabled: true
+    display: "Mining Efficiency"
+    icon: "⛏"
+    format: "&7%icon% &e%value% &7%display%"
+    priority: 51
+  submerged_mining_speed:
+    enabled: true
+    display: "Underwater Mining"
+    icon: "⛏"
+    format: "&7%icon% &e%value% &7%display%"
+    priority: 52
+  block_interaction_range:
+    enabled: true
+    display: "Block Reach"
+    icon: "➚"
+    format: "&7%icon% &d%value% &7%display%"
+    priority: 60
+  entity_interaction_range:
+    enabled: true
+    display: "Entity Reach"
+    icon: "➚"
+    format: "&7%icon% &d%value% &7%display%"
+    priority: 61
+  oxygen_bonus:
+    enabled: true
+    display: "Oxygen Bonus"
+    icon: "○"
+    format: "&7%icon% &3%value% &7%display%"
+    priority: 70
+  burning_time:
+    enabled: true
+    display: "Burning Time"
+    icon: "♨"
+    format: "&7%icon% &6%value% &7%display%"
+    priority: 71
+  luck:
+    enabled: true
+    display: "Luck"
+    icon: "☘"
+    format: "&7%icon% &a%value% &7%display%"
+    priority: 80
+  scale:
+    enabled: true
+    display: "Scale"
+    icon: "⇕"
+    format: "&7%icon% &7%value% &7%display%"
+    priority: 90
+  follow_range:
+    enabled: true
+    display: "Follow Range"
+    icon: "◎"
+    format: "&7%icon% &7%value% &7%display%"
+    priority: 91
+  tempt_range:
+    enabled: true
+    display: "Tempt Range"
+    icon: "◎"
+    format: "&7%icon% &7%value% &7%display%"
+    priority: 92
+  spawn_reinforcements:
+    enabled: true
+    display: "Spawn Reinforcements"
+    icon: "☠"
+    format: "&7%icon% &7%value% &7%display%"
+    priority: 93

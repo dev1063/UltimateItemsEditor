@@ -1,0 +1,23 @@
+# Enchantments that are not vanilla (added by plugins such as a CrazyEnchantments fork).
+#
+# default-format : used for every enchantment this file does not know. Placeholders: %name% %level_roman% %level_int%
+# plugin-formats : one format per plugin namespace (the part before the colon, e.g. "crazyenchantments").
+#                  Find a namespace with: /ie template inspect  (shows "namespace:key" of every enchantment)
+# overrides      : style of one single enchantment, key = "namespace:key" (use quotes).
+
+default-format: "&8» &d%name% %level_roman%"
+
+# plugin-formats:
+#   crazyenchantments:
+#     format: "&8» &5%name% %level_roman%"
+#     priority: 150
+
+# overrides:
+#   "crazyenchantments:lifesteal":
+#     enabled: true
+#     display: "Lifesteal"
+#     format: "&8» &4%name% &7%level_roman%"
+#     priority: 120
+
+plugin-formats: {}
+overrides: {}

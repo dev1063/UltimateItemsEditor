@@ -1,0 +1,49 @@
+# UltimateItemsEditor - configuration
+# (templates = palettes.yml, enchantment/attribute styles = enchantsstyle/*.yml, texts = messages/<language>.yml)
+
+# Language of the plugin messages AND of the texts written into item lore (enchantment names,
+# attribute names, %lang:key% used inside templates). Any file in plugins/UltimateItemsEditor/messages/ works:
+# copy english.yml to e.g. portuguese.yml, translate it and set "language: portuguese".
+# Can also be changed in game with /ie language <name>.
+language: english
+
+# Template used by "/ie template apply" when no name is given.
+default-template: legendary
+
+# Force the vanilla enchantment / attribute tooltip to be hidden on every templated item,
+# whatever the template says (the template lore already lists them).
+hide-enchants-globally: false
+hide-attributes-globally: false
+
+# Decimals shown for attribute values (0-6).
+attribute-decimal-places: 2
+
+# true : the item's own lore (descriptions you wrote) is kept between the template header and the
+#        enchantment/attribute lines.
+# false: only the template is shown; the original lore is stored and comes back with "/ie template reset".
+keep-item-lore: true
+
+# Triggers: rules that react to what players do (clicks, attacks, breaking blocks, ...) and run actions.
+# Rules live in plugins/UltimateItemsEditor/rules/*.yml (see examples.yml). With no rules nothing is registered.
+triggers:
+  # false = the trigger engine never registers a listener or a task.
+  enabled: true
+  # PERIODIC rules are checked every this many ticks (20 = once per second) for every online player.
+  periodic-base-ticks: 20
+  # A rule that throws this many errors is switched off until /ie rules reload.
+  max-rule-errors: 5
+
+# Consumable items: items that run console commands when clicked and are used up (/ie consumable).
+# Each one is a file in plugins/UltimateItemsEditor/consumables/. With none, no listener is registered.
+consumables:
+  enabled: true
+
+# Menus
+gui:
+  # A soft click sound when a menu button is pressed.
+  click-sounds: true
+
+# Custom items: items with skills (triggers, conditions and actions that belong to the item) (/ie customitem).
+# Each one is a file in plugins/UltimateItemsEditor/customitems/. Their skills run on the trigger engine.
+customitems:
+  enabled: true

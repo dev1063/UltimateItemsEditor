@@ -1,0 +1,15 @@
+name: UltimateItemsEditor
+version: '${project.version}'
+main: at.dumphey.itemeditor.UltimateItemsEditor
+api-version: 1.20
+prefix: UltimateItemsEditor
+authors: [ Dumphey ]
+description: Ultimate items editor: item editor, saved items manager and configurable item templates.
+website: https://www.spigotmc.org/members/dumphey.42048/
+softdepend: [ PlaceholderAPI ]
+commands:
+  ultimateitemseditor:
+    description: UltimateItemsEditor management command
+    usage: /ie
+    aliases: [ ie, uie, itemeditor ]
+    permission: ie.*

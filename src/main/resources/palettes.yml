@@ -1,0 +1,78 @@
+# Item templates. One entry per template, the key is the template name used in commands and the GUI.
+#
+#   icon                 Material shown in the template GUI (optional)
+#   display-name-prefix  written in front of the item's name (colors apply to the name too)
+#   header / footer      lore lines before / after the item's own lore and the generated enchant/attribute lines
+#   enchant-spacing      blank line between the enchantment lines and the attribute lines
+#   attribute-spacing    blank line after the attribute lines
+#   hide-enchants        hide the vanilla enchantment tooltip (the template lists them itself)
+#   hide-attributes      hide the vanilla attribute tooltip (the template lists them itself)
+#
+# Text supports: &c &l &r | &#RRGGBB | <red> <bold> </red> | <#RRGGBB> | <gradient:#ff0000:#0000ff>..</gradient> | <rainbow>..</rainbow>
+# %lang:some-key% is replaced with "template-text.some-key" of the active language file, so the same template
+# reads "LEGENDARY" or "LEGENDARIO" depending on /ie language.
+# You can also put one template per file in plugins/UltimateItemsEditor/palettes/<name>.yml (same keys, no "palettes:" root).
+
+palettes:
+  common:
+    icon: GRAY_DYE
+    display-name-prefix: "&7"
+    header:
+      - "%lang:rarity-common%"
+      - ""
+    footer: []
+    enchant-spacing: false
+    attribute-spacing: true
+    hide-enchants: true
+    hide-attributes: true
+
+  rare:
+    icon: LAPIS_LAZULI
+    display-name-prefix: "&9"
+    header:
+      - "%lang:rarity-rare%"
+      - ""
+    footer: []
+    enchant-spacing: false
+    attribute-spacing: true
+    hide-enchants: true
+    hide-attributes: true
+
+  epic:
+    icon: AMETHYST_SHARD
+    display-name-prefix: "&5&l"
+    header:
+      - "%lang:rarity-epic%"
+      - ""
+    footer:
+      - "&8&m                         "
+    enchant-spacing: true
+    attribute-spacing: true
+    hide-enchants: true
+    hide-attributes: true
+
+  legendary:
+    icon: GOLD_INGOT
+    display-name-prefix: "&6&l"
+    header:
+      - "%lang:rarity-legendary%"
+      - ""
+    footer:
+      - "&8&m                         "
+    enchant-spacing: true
+    attribute-spacing: true
+    hide-enchants: true
+    hide-attributes: true
+
+  mythic:
+    icon: NETHER_STAR
+    display-name-prefix: "<gradient:#ff55ff:#5555ff>\u2726</gradient> &d&l"
+    header:
+      - "<gradient:#ff55ff:#5555ff>%lang:rarity-mythic%</gradient>"
+      - ""
+    footer:
+      - "&8&m                         "
+    enchant-spacing: true
+    attribute-spacing: true
+    hide-enchants: true
+    hide-attributes: true

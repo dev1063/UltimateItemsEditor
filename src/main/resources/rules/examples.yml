@@ -1,0 +1,90 @@
+# Trigger rules. Every rule below is disabled (enabled: false): switch on the ones you want, then /ie rules reload.
+# Mistakes are reported with the exact place (/ie rules errors) and never stop the other rules from loading.
+#
+# trigger:  INTERACT BLOCK_BREAK BLOCK_PLACE CONSUME DROP SHOOT_BOW ATTACK DEFEND KILL DEATH JOIN QUIT PERIODIC
+# item:     custom item id the rule belongs to   (/ie tag item <id> on the item in your hand)
+# enchant:  custom enchantment id; %level% is its level   (/ie tag enchant <id> <level>)
+#           (use item OR enchant, or neither for a rule that applies to everyone)
+# slots:    where the item must be: hand, off_hand, head, chest, legs, feet, hands, armor, any
+#           (INTERACT, BLOCK_*, CONSUME, DROP and SHOOT_BOW use the item involved; the others look at these slots)
+# cooldown: per player, started only when the conditions pass. 5s, 20t, 2m, 500ms; a bare number is seconds
+# cooldown-message: sent to the player when the cooldown blocks the rule; %cooldown% = seconds left
+# materials: materials the bound item may have. Speeds things up: when every item/enchant-bound rule of a trigger lists
+#           its materials, items of any other material are skipped without reading them
+# run-when-cancelled: false (default) skips events another plugin already cancelled (protections)
+# interval: PERIODIC only, how often it runs (a multiple of triggers.periodic-base-ticks)
+#
+# conditions (all must be true; use any: / not: / all: to combine):
+#   world, click, slot, sneaking, sprinting, flying, gamemode, permission, chance, compare, item-material,
+#   item-id, custom-enchant, vanilla-enchant, item-name-contains, item-lore-contains, block-type, target-type,
+#   target-player, time, cooldown, all, any, not
+# actions (run in order):
+#   message, title, actionbar, particle, command, sound, potion, damage, heal, feed, ignite, set-damage, cancel, set-cooldown, delay, if
+# Placeholders in texts and commands: %player% %target% %world% %level% %damage% %item% %x% %y% %z% %rule% %trigger% %click%
+
+rules:
+  fire_sword_ignite:
+    enabled: false
+    trigger: ATTACK
+    item: fire_sword
+    cooldown: 3s
+    conditions:
+      - target-player: false
+      - chance: 40
+    actions:
+      - ignite: 4s
+      - sound: "entity.blaze.shoot, 1, 1"
+      - message: "&6Your sword sets %target% on fire!"
+
+  lifesteal_enchant:
+    enabled: false
+    trigger: ATTACK
+    enchant: lifesteal
+    conditions:
+      - compare: "damage >= 2"
+    actions:
+      - heal: 1
+      - message: "&cLifesteal %level%"
+
+  speed_boots:
+    enabled: false
+    trigger: PERIODIC
+    enchant: swiftness
+    slots: feet
+    interval: 2s
+    actions:
+      - potion: { effect: speed, duration: 4s, amplifier: 1 }
+
+  lightning_staff:
+    enabled: false
+    trigger: INTERACT
+    item: lightning_staff
+    cooldown: 10s
+    conditions:
+      - click: right
+      - sneaking: false
+      - not:
+          - world: [world_nether, world_the_end]
+    actions:
+      - command: "execute at %player% run summon lightning_bolt ~ ~ ~"
+      - set-cooldown: "staff-sound, 1s"
+      - delay:
+          time: 1s
+          actions:
+            - message: "&eThe storm fades."
+
+  vip_pickaxe_bonus:
+    enabled: false
+    trigger: BLOCK_BREAK
+    item: vip_pickaxe
+    conditions:
+      - block-type: [DIAMOND_ORE, DEEPSLATE_DIAMOND_ORE]
+    actions:
+      - if:
+          conditions:
+            - chance: 20
+          then:
+            - message: "&bLucky! Bonus drop"
+            - command: "give %player% diamond 1"
+          else:
+            - sound: "entity.experience_orb.pickup"
