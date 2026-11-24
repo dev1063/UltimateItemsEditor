@@ -34,8 +34,8 @@ public class PromptHandler {
         event.setCancelled(true);
 
         Bukkit.getScheduler().runTask(UltimateItemsEditor.getInstance(), () -> {
-            if (prompt.fulfill(event.getMessage())) {
-                prompts.remove(event.getPlayer());
+            if (prompts.get(event.getPlayer()) == prompt && prompt.fulfill(event.getMessage())) {
+                prompts.remove(event.getPlayer(), prompt);
                 prompt.onComplete();
             }
         });

@@ -6,6 +6,7 @@ import org.bukkit.inventory.ItemStack;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -67,6 +68,19 @@ public final class CustomItem {
     public List<String> getSkillIds() {
         final Map<String, Object> skills = Cfg.map(raw.get("skills"));
         return skills == null ? new ArrayList<String>() : new ArrayList<>(skills.keySet());
+    }
+
+    /** Descriptions in file order, including entries from a disabled skill. */
+    public List<String> getSkillEntries(String skillId, boolean conditions) {
+        final Map<String, Object> skills = Cfg.map(raw.get("skills"));
+        final Map<String, Object> skill = skills == null ? null : Cfg.map(skills.get(skillId.toLowerCase(Locale.ROOT)));
+        final List<String> entries = new ArrayList<>();
+        if (skill != null) {
+            for (Object entry : Cfg.list(skill.get(conditions ? "conditions" : "actions"))) {
+                entries.add(String.valueOf(entry));
+            }
+        }
+        return entries;
     }
 
     /** The active skill with that id, or null. */

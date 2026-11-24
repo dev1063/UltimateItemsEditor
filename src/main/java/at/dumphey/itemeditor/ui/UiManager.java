@@ -6,6 +6,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,6 +49,19 @@ public class UiManager {
             screen.onClick(event.getSlot(), event.getClick());
         } finally {
             clickingPlayer = previousClickingPlayer;
+        }
+    }
+
+    public void onInventoryDrag(InventoryDragEvent event) {
+        final UiScreen screen = screens.get(event.getWhoClicked());
+        if (screen != null && screen.isInventory(event.getInventory())) {
+            final int topSize = event.getInventory().getSize();
+            for (int slot : event.getRawSlots()) {
+                if (slot < topSize) {
+                    event.setCancelled(true);
+                    return;
+                }
+            }
         }
     }
 

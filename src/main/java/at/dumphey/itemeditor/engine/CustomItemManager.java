@@ -188,6 +188,11 @@ public final class CustomItemManager {
     /** Adds a skill with its first action, e.g. addSkill("fire_sword", "ignite", "ATTACK", "ignite", "4s"). */
     public CustomItem addSkill(String itemId, String skillId, String trigger, String actionName, String actionValue)
             throws ConfigException, IOException {
+        return addSkill(itemId, skillId, trigger, actionName, (Object) typed(actionValue));
+    }
+
+    public CustomItem addSkill(String itemId, String skillId, String trigger, String actionName, Object actionValue)
+            throws ConfigException, IOException {
         final CustomItem current = require(itemId);
         final String skill = skillKey(skillId, current);
         final Map<String, Object> raw = DefinitionFiles.copy(current.raw());
@@ -215,30 +220,52 @@ public final class CustomItemManager {
     /** Appends {@code name: value} to the skill's "actions" or "conditions". */
     public CustomItem addEntry(String itemId, String skillId, String list, String name, String value)
             throws ConfigException, IOException {
+        return addEntry(itemId, skillId, list, name, (Object) typed(value));
+    }
+
+    public CustomItem addEntry(String itemId, String skillId, String list, String name, Object value)
+            throws ConfigException, IOException {
         final CustomItem current = require(itemId);
         final Map<String, Object> raw = DefinitionFiles.copy(current.raw());
         final Map<String, Object> cfg = skillOf(raw, skillId);
-        final List<Object> entries = new ArrayList<>(Cfg.list(cfg.get(listName(list))));
+        final String listKey = listName(list);
+        final ParseContext context = new ParseContext(engine, sourceOf(current.getId())).child(skillId).child(listKey);
+        if (listKey.equals("conditions")) {
+            engine.parseCondition(name, value, context);
+        } else {
+            engine.parseAction(name, value, context);
+        }
+        final List<Object> entries = Cfg.list(cfg.get(listKey));
         entries.add(entry(name, value));
-        cfg.put(listName(list), entries);
+        cfg.put(listKey, entries);
         return store(current.getId(), raw, skillId.toLowerCase(Locale.ROOT));
     }
 
     /** Removes the entry number {@code number} (1-based). A skill must keep at least one action. */
     public CustomItem removeEntry(String itemId, String skillId, String list, int number)
             throws ConfigException, IOException {
+        return removeEntry(itemId, skillId, list, number, false);
+    }
+
+    /** The GUI can keep an actionless skill as a disabled draft. */
+    public CustomItem removeEntry(String itemId, String skillId, String list, int number, boolean keepDraft)
+            throws ConfigException, IOException {
         final CustomItem current = require(itemId);
         final Map<String, Object> raw = DefinitionFiles.copy(current.raw());
         final Map<String, Object> cfg = skillOf(raw, skillId);
-        final List<Object> entries = new ArrayList<>(Cfg.list(cfg.get(listName(list))));
+        final String listKey = listName(list);
+        final List<Object> entries = Cfg.list(cfg.get(listKey));
         if (number < 1 || number > entries.size()) {
-            throw new ConfigException("there is no " + listName(list).replaceAll("s$", "") + " #" + number);
+            throw new ConfigException("there is no " + listKey + " entry #" + number);
         }
         entries.remove(number - 1);
         if (entries.isEmpty()) {
-            cfg.remove(listName(list));
+            cfg.remove(listKey);
+            if (keepDraft && listKey.equals("actions")) {
+                cfg.put("enabled", false);
+            }
         } else {
-            cfg.put(listName(list), entries);
+            cfg.put(listKey, entries);
         }
         return store(current.getId(), raw, skillId.toLowerCase(Locale.ROOT));
     }
@@ -325,9 +352,9 @@ public final class CustomItemManager {
         return cfg;
     }
 
-    private static Map<String, Object> entry(String name, String value) {
+    private static Map<String, Object> entry(String name, Object value) {
         final Map<String, Object> entry = new LinkedHashMap<>();
-        entry.put(name.toLowerCase(Locale.ROOT), typed(value));
+        entry.put(name.toLowerCase(Locale.ROOT), Cfg.plain(value));
         return entry;
     }
 

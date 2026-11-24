@@ -1,6 +1,7 @@
 package at.dumphey.itemeditor.itemeditor.modules.home;
 
 import at.dumphey.itemeditor.itemeditor.modules.attributes.items.OpenManageAttributesUiItem;
+import at.dumphey.itemeditor.itemeditor.modules.behavior.BehaviorEditor;
 import at.dumphey.itemeditor.itemeditor.modules.book.items.OpenManageBookUiItem;
 import at.dumphey.itemeditor.itemeditor.modules.durability.SetDurabilityItem;
 import at.dumphey.itemeditor.itemeditor.modules.enchantments.items.OpenManageEnchantmentsUiItem;
@@ -12,7 +13,9 @@ import at.dumphey.itemeditor.itemeditor.modules.potions.items.OpenManagePotionUi
 import at.dumphey.itemeditor.itemeditor.modules.skull.SetSkullNameUiItem;
 import at.dumphey.itemeditor.itemeditor.modules.template.items.OpenTemplatesUiItem;
 import at.dumphey.itemeditor.itemeditor.modules.unbreakable.ToggleUnbreakableUiItem;
+import at.dumphey.itemeditor.ui.items.ActionUiItem;
 import at.dumphey.itemeditor.ui.template.UiItem;
+import at.dumphey.itemeditor.utils.ItemBuilder;
 import at.dumphey.itemeditor.ui.template.UiScreen;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -197,7 +200,7 @@ public final class EditorMenu {
         views.remove(player);
     }
 
-    /** The menu with every option the editor has always had, grouped in three tabs. */
+    /** The menu with every option the editor has always had, grouped by category. */
     public static EditorMenu withDefaults() {
         final EditorMenu menu = new EditorMenu();
 
@@ -221,6 +224,15 @@ public final class EditorMenu {
         menu.registerOption("special", "book", 20, OpenManageBookUiItem::new);
         menu.registerOption("special", "skull", 30, SetSkullNameUiItem::new);
         menu.registerOption("special", "leather", 40, SetLeatherColorUiItem::new);
+
+        menu.registerCategory(new EditorCategory("behavior", "Comportamiento", "Habilidades, consumibles y efectos",
+                Material.COMMAND_BLOCK, Material.LIME_STAINED_GLASS_PANE, 40));
+        menu.registerOption("behavior", "customitems", 10, (screen, player) -> new ActionUiItem(screen, player,
+                ItemBuilder.uiItem(Material.NETHER_STAR, "Ítems personalizados", "Crea ítems con habilidades"),
+                () -> new BehaviorEditor(player).open(false)));
+        menu.registerOption("behavior", "consumables", 20, (screen, player) -> new ActionUiItem(screen, player,
+                ItemBuilder.uiItem(Material.HONEY_BOTTLE, "Consumibles", "Ejecuta acciones al usar el ítem"),
+                () -> new BehaviorEditor(player).open(true)));
 
         return menu;
     }

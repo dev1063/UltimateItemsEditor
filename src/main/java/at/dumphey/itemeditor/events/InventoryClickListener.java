@@ -4,6 +4,7 @@ import at.dumphey.itemeditor.itemeditor.ItemEditor;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
 
 public class InventoryClickListener implements Listener {
 
@@ -17,4 +18,8 @@ public class InventoryClickListener implements Listener {
         ItemEditor.INSTANCE.getUiManager().onInventoryClick(event);
     }
 
+    @EventHandler
+    public void onDrag(InventoryDragEvent event) {
+        ItemEditor.INSTANCE.getUiManager().onInventoryDrag(event);
+    }
 }

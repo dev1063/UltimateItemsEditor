@@ -107,7 +107,15 @@ public final class Consumable {
     }
 
     public List<String> getActionDescriptions() {
-        final List<Object> entries = Cfg.list(raw.get("actions"));
+        return describe("actions");
+    }
+
+    public List<String> getConditionDescriptions() {
+        return describe("conditions");
+    }
+
+    private List<String> describe(String list) {
+        final List<Object> entries = Cfg.list(raw.get(list));
         final List<String> descriptions = new ArrayList<>(entries.size());
         for (Object entry : entries) {
             descriptions.add(String.valueOf(entry));

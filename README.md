@@ -138,6 +138,20 @@ engine.load(); // rules can now use `has-mana: 20` and `lightning: true`
 A future custom enchantment is then just data: a rule bound with `enchant: <id>`, plus `/ie tag enchant <id> <level>`
 (or `ItemTags` from code) to put it on an item.
 
+## Editing item behavior in the GUI
+
+Open `/ie edit` with an item, or open the saved item editor, and select **Comportamiento**. Choose **Ítems
+personalizados** or **Consumibles**. You can edit an existing definition or create one from a copy of the item
+currently being edited. Definition changes save immediately.
+
+- For a custom item, create a skill by choosing its trigger and first action. Each skill has its own action list,
+  conditions and cooldown. Removing its final action leaves it disabled. Add an action and re-enable the skill to
+  use it again.
+- For a consumable, change the activation click, amount consumed, cooldown, commands, conditions and feedback.
+- Open a list and use **Añadir**, or click an existing entry to delete it. Pick common sounds, particles and
+  cooldowns directly in the GUI. Enter text values in chat. Enter command text without its leading slash.
+- Use the chest button to receive a copy of the configured item.
+
 ## Feedback for item actions
 
 Use `message` for chat, `title` for the center of the screen, and `actionbar` for the text above the hotbar. Text supports

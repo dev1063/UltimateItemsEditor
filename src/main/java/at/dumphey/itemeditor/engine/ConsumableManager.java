@@ -362,24 +362,44 @@ public final class ConsumableManager {
     }
 
     public int addAction(String id, String type, String value) throws ConfigException, IOException {
-        final Consumable current = require(id);
-        final Map<String, Object> raw = DefinitionFiles.copy(current.raw());
-        final List<Object> actions = Cfg.list(raw.get("actions"));
-        actions.add(Collections.singletonMap(type.toLowerCase(Locale.ROOT), value));
-        raw.put("actions", actions);
-        store(current.getId(), raw);
-        return actions.size();
+        return addEntry(id, "actions", type, value);
     }
 
     public boolean removeAction(String id, int number) throws ConfigException, IOException {
+        return removeEntry(id, "actions", number);
+    }
+
+    public int addEffect(String id, String type, Object value) throws ConfigException, IOException {
+        return addEntry(id, "actions", type, value);
+    }
+
+    public int addCondition(String id, String type, Object value) throws ConfigException, IOException {
+        return addEntry(id, "conditions", type, value);
+    }
+
+    public boolean removeCondition(String id, int number) throws ConfigException, IOException {
+        return removeEntry(id, "conditions", number);
+    }
+
+    private int addEntry(String id, String list, String type, Object value) throws ConfigException, IOException {
         final Consumable current = require(id);
         final Map<String, Object> raw = DefinitionFiles.copy(current.raw());
-        final List<Object> actions = Cfg.list(raw.get("actions"));
-        if (number < 1 || number > actions.size()) {
+        final List<Object> entries = Cfg.list(raw.get(list));
+        entries.add(Collections.singletonMap(type.toLowerCase(Locale.ROOT), Cfg.plain(value)));
+        raw.put(list, entries);
+        store(current.getId(), raw);
+        return entries.size();
+    }
+
+    private boolean removeEntry(String id, String list, int number) throws ConfigException, IOException {
+        final Consumable current = require(id);
+        final Map<String, Object> raw = DefinitionFiles.copy(current.raw());
+        final List<Object> entries = Cfg.list(raw.get(list));
+        if (number < 1 || number > entries.size()) {
             return false;
         }
-        actions.remove(number - 1);
-        raw.put("actions", actions);
+        entries.remove(number - 1);
+        raw.put(list, entries);
         store(current.getId(), raw);
         return true;
     }
