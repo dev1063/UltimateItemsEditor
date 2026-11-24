@@ -151,7 +151,8 @@ public class HomeUiScreen extends UiScreen {
         if (item != null) {
             lines.add(lang.msg("gui-hub-info-type", "%type%", NameUtils.enumToFriendlyName(item.getType().name())));
             lines.add(lang.msg("gui-hub-info-amount", "%amount%", String.valueOf(item.getAmount())));
-            final String template = ItemEditor.INSTANCE.getStyleService().getMetadata().getAppliedTemplate(item.getItemMeta());
+            final String template = ItemEditor.INSTANCE.modules().vanilla()
+                    ? ItemEditor.INSTANCE.getStyleService().getMetadata().getAppliedTemplate(item.getItemMeta()) : null;
             if (template != null) {
                 lines.add(lang.msg("gui-hub-info-template", "%template%", template));
             }

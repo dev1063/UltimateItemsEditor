@@ -56,6 +56,9 @@ final class RuleLoader {
                     engine.addError(source + " > rules." + id + ": a rule must be a section with 'trigger' and 'actions'");
                     continue;
                 }
+                if (!engine.acceptsRule(cfg.get("enchant") != null)) {
+                    continue;
+                }
                 if (Boolean.FALSE.equals(cfg.get("enabled")) || "false".equalsIgnoreCase(String.valueOf(cfg.get("enabled")))) {
                     disabledCount++;
                     continue;

@@ -24,6 +24,78 @@ To get started, put `UltimateItemsEditor-<version>.jar` in `plugins/`, restart y
 - **Placeholders**: Give your players personalized items like '{player_name}'s axe' using [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/).
 - ... and much more!
 
+## Modules
+
+Set the switches in `plugins/UltimateItemsEditor/config.yml` and restart the server to apply a change.
+
+```yaml
+modules:
+  vanilla: true
+  custom-commands: true
+  custom-enchantments: false
+```
+
+- **Vanilla** loads the appearance, properties and special-item editor tabs, templates and their style files.
+- **Custom Commands** loads the behavior editor, consumables, custom item skills and general or item-bound rules.
+  The existing `triggers.enabled`, `consumables.enabled` and `customitems.enabled` settings still apply.
+- **Custom Enchantments** loads the custom enchantment catalog and editor, enchant tags, enchant-bound rules and the
+  `custom-enchant` condition. Existing tagged items and enchant-bound rules can use the same IDs.
+
+Saved items and the language settings are shared. You can still list, save and retrieve items with all three modules
+disabled. Module switches leave the existing data files in place.
+
+## Custom enchantments
+
+Enable `modules.custom-enchantments`, restart, and open **/ie edit → Encantamientos custom → Catálogo de
+encantamientos**. Pick a compatible enchantment and level, or select an applied enchantment to remove it.
+For command-based application, use `/ie tag enchant <id> <level>`. Level `0` removes the tag.
+
+| ID | Equipment | Effect |
+| --- | --- | --- |
+| `blood_pact` | Sword | Heals the attacker on melee hits |
+| `ember_edge` | Sword | Sets the target on fire on melee hits |
+| `iron_ward` | Chestplate | Reduces damage from attacks |
+| `swiftstep` | Boots | Grants speed while sprinting |
+| `miner_focus` | Pickaxe | Grants haste after breaking a block |
+| `fortune_xp` | Sword / pickaxe | Increases combat and mining XP up to 2× |
+| `necromancer` | Chestplate | Chance to summon a skeleton or zombie against an attacking mob |
+| `tunneler` | Pickaxe / shovel | Excavates suitable terrain in planes from 3×3 to 6×6 |
+| `veinminer` | Pickaxe | Follows connected blocks of the same ore family |
+| `multishot` | Bow / crossbow / trident | Adds up to four non-recoverable arrows to the shot |
+| `steel_guardians` | Chestplate | Chance to summon an iron golem against an attacking mob |
+| `end_arrow` | Bow / crossbow | Teleports to safe footing near the arrow impact |
+| `hare` | Boots | Grants Jump Boost I–III |
+| `magma_step` | Boots | Briefly hardens exposed source lava and magma into basalt |
+| `glass_shatter` | Pickaxe | Instantly breaks glass and glass panes |
+| `tree_feller` | Axe | Breaks connected logs or stems of the same type |
+| `auto_collect` | Mining tools / axe | Sends block drops to inventory, leaving overflow on the ground |
+
+Excavation shares a 24-candidate budget per tick across the server. It uses ordinary player block-break events,
+requires a suitable tool and skips unloaded chunks. Sneak to mine a single block. Vein mining and tree felling
+process at most 48 and 96 additional blocks respectively. Summons last 10 seconds and do not drop loot or XP.
+
+The version 3 catalog also adds 42 combat, fishing, farming and flight enchantments. See the names, activation
+events, default chances and level definitions in `custom-enchantments.yml`. Updating the plugin imports missing
+entries while preserving configured entries and their enabled state.
+
+- Explosive arrows and creeper guards deal entity damage without modifying blocks. Combat area damage is capped at
+  eight nearby targets per activation, and secondary damage does not start another chain of catalog combat effects.
+- Disarming moves one armor piece into the target's inventory when a free slot is available. It respects Curse of
+  Binding. Binding on death removes the enchanted equipped item when it procs.
+- **Siembra de la Aurora** uses an enchanted hoe on farmland while sneaking and consumes one carrot per new crop.
+  Each placement runs a Bukkit block-place event. **Forja del Sol** uses furnace recipes to smelt eligible block drops.
+- **Estela de Supernova** augments rocket use while gliding. **Alas del Vendaval** provides a cooldown-limited
+  right-click boost while gliding without a rocket.
+
+Definitions live in `custom-enchantments.yml`. Each can set `enabled`, applicable materials, slots, cooldown,
+trigger, conditions and consecutive levels (up to 16). Use `/ie rules reload` to reload the definitions.
+Invalid entries are isolated and reported in `/ie rules errors`. `triggers.enabled` controls whether effects run.
+
+This catalog uses UltimateItemsEditor item tags. Apply and inspect the enchantments using the editor or `/ie tag`;
+they have no vanilla enchanting table, anvil or book integration. The catalog design takes inspiration from the
+configurable levels, equipment restrictions and event-driven effects in
+[ExcellentEnchants](https://github.com/nulli0n/ExcellentEnchants-spigot).
+
 ## Commands
 
 - `/ie edit` - Edit the item you are holding.

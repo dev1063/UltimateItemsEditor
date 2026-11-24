@@ -70,7 +70,7 @@ public class ItemListUiScreen extends UiScreen {
         setItem(UiPosition.of(5, 4), bar[1]);
         setItem(UiPosition.of(5, 5), bar[2]);
 
-        if (!items.isEmpty()) {
+        if (!items.isEmpty() && ItemEditor.INSTANCE.modules().vanilla()) {
             setItem(UiPosition.of(5, 8), new ActionUiItem(this, player,
                     ItemBuilder.uiItem(Material.ENCHANTED_BOOK, lang.msg("gui-bulk-name"), lang.msg("gui-bulk-lore")),
                     this::openBulkTemplates));

@@ -5,6 +5,7 @@ import at.dumphey.itemeditor.compatibility.VersionUtils;
 import at.dumphey.itemeditor.events.InventoryClickListener;
 import at.dumphey.itemeditor.events.PlayerChatListener;
 import at.dumphey.itemeditor.events.PlayerQuitListener;
+import at.dumphey.itemeditor.itemeditor.ItemEditor;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
@@ -18,6 +19,7 @@ public final class UltimateItemsEditor extends JavaPlugin {
     private static final String LEGACY_NAME = "ItemEditor";
 
     private static UltimateItemsEditor instance;
+    private PluginModules modules;
 
     public static UltimateItemsEditor getInstance() {
         return instance;
@@ -37,21 +39,30 @@ public final class UltimateItemsEditor extends JavaPlugin {
         migrateLegacyDataFolder();
         warnIfLegacyPluginIsPresent();
 
-        // creates config.yml / palettes.yml / messages and loads templates, language and styles
-        at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getStyleService().load();
-        // reads rules/*.yml; registers a listener only for the triggers those rules use
-        at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getTriggerEngine().load();
+        saveDefaultConfig();
+        modules = new PluginModules(getConfig());
+
+        final ItemEditor editor = ItemEditor.INSTANCE;
+        editor.getStyleService().load();
+        if (modules.triggerEngine()) {
+            editor.getTriggerEngine().load();
+        }
 
         registerCommands();
         getServer().getPluginManager().registerEvents(new InventoryClickListener(), this);
-        getServer().getPluginManager().registerEvents(new PlayerChatListener(), this);
+        if (modules.itemEditor()) {
+            getServer().getPluginManager().registerEvents(new PlayerChatListener(), this);
+        }
         getServer().getPluginManager().registerEvents(new PlayerQuitListener(), this);
+        editor.getItemStorage().reload();
 
-        at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getItemStorage().reload();
-
-        if (isPlaceholderApiEnabled()) {
+        if (modules.vanilla() && isPlaceholderApiEnabled()) {
             getLogger().info("Enabled PlaceholderAPI support.");
         }
+    }
+
+    public PluginModules modules() {
+        return modules;
     }
 
     public boolean isPlaceholderApiEnabled() {
@@ -60,9 +71,14 @@ public final class UltimateItemsEditor extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getTriggerEngine().shutdown();
-        // writes are asynchronous: make sure every pending save/delete reaches the disk
-        at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getItemStorage().shutdown();
+        if (modules == null) {
+            return;
+        }
+        final ItemEditor editor = ItemEditor.INSTANCE;
+        if (modules.triggerEngine()) {
+            editor.getTriggerEngine().shutdown();
+        }
+        editor.getItemStorage().shutdown();
     }
 
     private void registerCommands() {

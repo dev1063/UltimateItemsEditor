@@ -1,0 +1,765 @@
+# Enable modules.custom-enchantments in config.yml and restart the server.
+# Changes to this file can then be applied with /ie rules reload.
+# Each entry uses the same triggers, conditions and actions as rules.
+# Use consecutive levels starting at 1 (up to 16). Materials are required.
+catalog-version: 3
+enchantments:
+  blood_pact:
+    name: "Pacto de sangre"
+    trigger: ATTACK
+    slots: hand
+    materials: &swords [WOODEN_SWORD, STONE_SWORD, IRON_SWORD, GOLDEN_SWORD, DIAMOND_SWORD, NETHERITE_SWORD]
+    cooldown: 4s
+    conditions:
+      - melee: true
+      - compare: "damage > 0"
+    levels:
+      '1': [{heal: 1}]
+      '2': [{heal: 2}]
+      '3': [{heal: 3}]
+
+  ember_edge:
+    name: "Filo de brasas"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 5s
+    conditions:
+      - melee: true
+      - compare: "damage > 0"
+    levels:
+      '1': [{ignite: 1s}]
+      '2': [{ignite: 2s}]
+      '3': [{ignite: 3s}]
+
+  iron_ward:
+    name: "Guardia férrea"
+    trigger: DEFEND
+    slots: chest
+    materials: [LEATHER_CHESTPLATE, CHAINMAIL_CHESTPLATE, IRON_CHESTPLATE, GOLDEN_CHESTPLATE, DIAMOND_CHESTPLATE, NETHERITE_CHESTPLATE]
+    cooldown: 6s
+    conditions:
+      - compare: "damage > 0"
+    levels:
+      '1': [{set-damage: {multiply: 0.90}}]
+      '2': [{set-damage: {multiply: 0.85}}]
+      '3': [{set-damage: {multiply: 0.80}}]
+
+  swiftstep:
+    name: "Paso veloz"
+    trigger: PERIODIC
+    slots: feet
+    materials: [LEATHER_BOOTS, CHAINMAIL_BOOTS, IRON_BOOTS, GOLDEN_BOOTS, DIAMOND_BOOTS, NETHERITE_BOOTS]
+    interval: 2s
+    conditions:
+      - sprinting: true
+    levels:
+      '1': [{potion: {effect: speed, duration: 3s, amplifier: 0}}]
+      '2': [{potion: {effect: speed, duration: 3s, amplifier: 1}}]
+
+  miner_focus:
+    name: "Enfoque minero"
+    trigger: BLOCK_BREAK
+    slots: hand
+    materials: [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE]
+    cooldown: 5s
+    levels:
+      '1': [{potion: {effect: haste, duration: 3s, amplifier: 0}}]
+      '2': [{potion: {effect: haste, duration: 5s, amplifier: 0}}]
+      '3': [{potion: {effect: haste, duration: 5s, amplifier: 1}}]
+
+  fortune_xp:
+    name: "Fortuna de la experiencia"
+    trigger: BLOCK_BREAK
+    alternate-trigger: KILL
+    slots: hand
+    materials: [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE, WOODEN_SWORD, STONE_SWORD, IRON_SWORD, GOLDEN_SWORD, DIAMOND_SWORD, NETHERITE_SWORD]
+    levels:
+      '1': [{catalog-exp: 1.25}]
+      '2': [{catalog-exp: 1.5}]
+      '3': [{catalog-exp: 2}]
+
+  necromancer:
+    name: "Pacto del nigromante"
+    trigger: DEFEND
+    slots: chest
+    materials: &chestplates [LEATHER_CHESTPLATE, CHAINMAIL_CHESTPLATE, IRON_CHESTPLATE, GOLDEN_CHESTPLATE, DIAMOND_CHESTPLATE, NETHERITE_CHESTPLATE]
+    cooldown: 20s
+    conditions: [{chance: 25}]
+    levels:
+      '1': [{catalog-summon: undead}]
+
+  tunneler:
+    name: "Quebramontañas"
+    trigger: BLOCK_BREAK
+    slots: hand
+    materials: &digging [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE, WOODEN_SHOVEL, STONE_SHOVEL, IRON_SHOVEL, GOLDEN_SHOVEL, DIAMOND_SHOVEL, NETHERITE_SHOVEL]
+    levels:
+      '1': [{catalog-mine: tunnel}]
+      '2': [{catalog-mine: tunnel}]
+      '3': [{catalog-mine: tunnel}]
+      '4': [{catalog-mine: tunnel}]
+
+  veinminer:
+    name: "Pulso de la veta"
+    trigger: BLOCK_BREAK
+    slots: hand
+    materials: &pickaxes [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE]
+    levels:
+      '1': [{catalog-mine: vein}]
+      '2': [{catalog-mine: vein}]
+      '3': [{catalog-mine: vein}]
+      '4': [{catalog-mine: vein}]
+
+  multishot:
+    name: "Lluvia de filos"
+    trigger: SHOOT_BOW
+    alternate-trigger: THROW_TRIDENT
+    slots: hands
+    materials: [BOW, CROSSBOW, TRIDENT]
+    cooldown: 2t
+    levels:
+      '1': [{catalog-volley: true}]
+      '2': [{catalog-volley: true}]
+      '3': [{catalog-volley: true}]
+      '4': [{catalog-volley: true}]
+
+  steel_guardians:
+    name: "Centinelas de acero"
+    trigger: DEFEND
+    slots: chest
+    materials: *chestplates
+    cooldown: 25s
+    conditions: [{chance: 20}]
+    levels:
+      '1': [{catalog-summon: golem}]
+
+  end_arrow:
+    name: "Flecha del vacío"
+    trigger: SHOOT_BOW
+    slots: hands
+    materials: [BOW, CROSSBOW]
+    cooldown: 5s
+    levels:
+      '1': [{catalog-warp: true}]
+
+  hare:
+    name: "Salto del cometa"
+    trigger: PERIODIC
+    slots: feet
+    materials: &boots [LEATHER_BOOTS, CHAINMAIL_BOOTS, IRON_BOOTS, GOLDEN_BOOTS, DIAMOND_BOOTS, NETHERITE_BOOTS]
+    interval: 2s
+    levels:
+      '1': [{potion: {effect: jump_boost, duration: 3s, amplifier: 0}}]
+      '2': [{potion: {effect: jump_boost, duration: 3s, amplifier: 1}}]
+      '3': [{potion: {effect: jump_boost, duration: 3s, amplifier: 2}}]
+
+  magma_step:
+    name: "Senda de la caldera"
+    trigger: PERIODIC
+    slots: feet
+    materials: *boots
+    interval: 1s
+    levels:
+      '1': [{catalog-magma: true}]
+      '2': [{catalog-magma: true}]
+
+  glass_shatter:
+    name: "Quebracristales"
+    trigger: BLOCK_DAMAGE
+    slots: hand
+    materials: *pickaxes
+    levels:
+      '1': [{catalog-glass: true}]
+
+  tree_feller:
+    name: "Titán del bosque"
+    trigger: BLOCK_BREAK
+    slots: hand
+    materials: &axes [WOODEN_AXE, STONE_AXE, IRON_AXE, GOLDEN_AXE, DIAMOND_AXE, NETHERITE_AXE]
+    levels:
+      '1': [{catalog-mine: tree}]
+      '2': [{catalog-mine: tree}]
+      '3': [{catalog-mine: tree}]
+      '4': [{catalog-mine: tree}]
+
+  auto_collect:
+    name: "Imán del saqueador"
+    trigger: BLOCK_BREAK
+    slots: hand
+    materials: [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE, WOODEN_SHOVEL, STONE_SHOVEL, IRON_SHOVEL, GOLDEN_SHOVEL, DIAMOND_SHOVEL, NETHERITE_SHOVEL, WOODEN_AXE, STONE_AXE, IRON_AXE, GOLDEN_AXE, DIAMOND_AXE, NETHERITE_AXE]
+    levels:
+      '1': [{catalog-collect: true}]
+
+  blast_arrow:
+    name: "Flecha Cataclismo"
+    trigger: SHOOT_BOW
+    slots: hands
+    materials: [BOW, CROSSBOW]
+    cooldown: 3s
+    levels:
+      '1': [{catalog-combat: explosive}]
+
+  toxic_hook:
+    name: "Anzuelo de Hidra"
+    trigger: FISH_HOOK
+    slots: hands
+    materials: [FISHING_ROD]
+    cooldown: 3s
+    conditions:
+      - target-player: true
+    levels:
+      '1': [{catalog-combat: fish-poison}]
+      '2': [{catalog-combat: fish-poison}]
+      '3': [{catalog-combat: fish-poison}]
+
+  ember_hook:
+    name: "Anzuelo del Averno"
+    trigger: FISH_HOOK
+    slots: hands
+    materials: [FISHING_ROD]
+    cooldown: 3s
+    conditions:
+      - target-player: true
+    levels:
+      '1': [{catalog-combat: fish-fire}]
+      '2': [{catalog-combat: fish-fire}]
+      '3': [{catalog-combat: fish-fire}]
+
+  poison_arrow:
+    name: "Aguijón Esmeralda"
+    trigger: SHOOT_BOW
+    slots: hands
+    materials: [BOW, CROSSBOW]
+    cooldown: 2s
+    levels:
+      '1': [{catalog-combat: poison-arrow}]
+
+  viper:
+    name: "Colmillo de Víbora"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 3s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 25
+    levels:
+      '1': [{potion: {effect: poison, duration: 2s, amplifier: 0, target: target}}]
+      '2': [{potion: {effect: poison, duration: 3s, amplifier: 0, target: target}}]
+      '3': [{potion: {effect: poison, duration: 4s, amplifier: 1, target: target}}]
+
+  frostblade:
+    name: "Filo del Invierno Eterno"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 4s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 22
+    levels:
+      '1': [{catalog-combat: freeze}]
+      '2': [{catalog-combat: freeze}]
+      '3': [{catalog-combat: freeze}]
+
+  blindblade:
+    name: "Corte del Eclipse"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 4s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 20
+    levels:
+      '1': [{potion: {effect: blindness, duration: 2s, amplifier: 0, target: target}}]
+      '2': [{potion: {effect: blindness, duration: 3s, amplifier: 0, target: target}}]
+      '3': [{potion: {effect: blindness, duration: 4s, amplifier: 0, target: target}}]
+
+  blind_arrow:
+    name: "Proyectil del Ocaso"
+    trigger: SHOOT_BOW
+    slots: hands
+    materials: [BOW, CROSSBOW]
+    cooldown: 2s
+    conditions:
+      - chance: 25
+    levels:
+      '1': [{catalog-combat: blind-arrow}]
+
+  thunderblade:
+    name: "Veredicto del Trueno"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 4s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 20
+    levels:
+      '1': [{catalog-combat: thunder}]
+      '2': [{catalog-combat: thunder}]
+      '3': [{catalog-combat: thunder}]
+
+  disorder:
+    name: "Cisma del Caos"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 8s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - target-player: true
+      - chance: 12
+    levels:
+      '1': [{catalog-combat: disorder}]
+
+  disarmer:
+    name: "Ladrón de Corazas"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 15s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - target-player: true
+      - chance: 8
+    levels:
+      '1': [{catalog-combat: disarm}]
+
+  autocook:
+    name: "Forja del Sol"
+    trigger: BLOCK_BREAK
+    slots: hand
+    materials: [WOODEN_AXE, WOODEN_PICKAXE, WOODEN_SHOVEL, WOODEN_HOE, STONE_AXE, STONE_PICKAXE, STONE_SHOVEL, STONE_HOE, IRON_AXE, IRON_PICKAXE, IRON_SHOVEL, IRON_HOE, GOLDEN_AXE, GOLDEN_PICKAXE, GOLDEN_SHOVEL, GOLDEN_HOE, DIAMOND_AXE, DIAMOND_PICKAXE, DIAMOND_SHOVEL, DIAMOND_HOE, NETHERITE_AXE, NETHERITE_PICKAXE, NETHERITE_SHOVEL, NETHERITE_HOE]
+    conditions:
+      - chance: 45
+    levels:
+      '1': [{catalog-cook: true}]
+
+  venom_blade:
+    name: "Acero de la Marchitez"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 4s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 18
+    levels:
+      '1': [{potion: {effect: wither, duration: 2s, amplifier: 0, target: target}}]
+      '2': [{potion: {effect: wither, duration: 3s, amplifier: 0, target: target}}]
+      '3': [{potion: {effect: wither, duration: 4s, amplifier: 0, target: target}}]
+
+  venom_bow:
+    name: "Arco de la Marchitez"
+    trigger: SHOOT_BOW
+    slots: hands
+    materials: [BOW, CROSSBOW]
+    cooldown: 2s
+    conditions:
+      - chance: 22
+    levels:
+      '1': [{catalog-combat: wither-arrow}]
+
+  demon_reforged:
+    name: "Forja Demoníaca"
+    trigger: KILL
+    slots: hand
+    materials: *swords
+    conditions:
+      - target-player: true
+      - chance: 40
+    levels:
+      '1': [{catalog-combat: reforge}]
+      '2': [{catalog-combat: reforge}]
+      '3': [{catalog-combat: reforge}]
+
+  ultimate_life:
+    name: "Último Latido"
+    trigger: ITEM_WEAR
+    slots: hands
+    materials: &durable_gear [LEATHER_HELMET, LEATHER_CHESTPLATE, LEATHER_LEGGINGS, LEATHER_BOOTS, CHAINMAIL_HELMET, CHAINMAIL_CHESTPLATE, CHAINMAIL_LEGGINGS, CHAINMAIL_BOOTS, IRON_HELMET, IRON_CHESTPLATE, IRON_LEGGINGS, IRON_BOOTS, GOLDEN_HELMET, GOLDEN_CHESTPLATE, GOLDEN_LEGGINGS, GOLDEN_BOOTS, DIAMOND_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, DIAMOND_BOOTS, NETHERITE_HELMET, NETHERITE_CHESTPLATE, NETHERITE_LEGGINGS, NETHERITE_BOOTS, TURTLE_HELMET, WOODEN_SWORD, WOODEN_AXE, WOODEN_PICKAXE, WOODEN_SHOVEL, WOODEN_HOE, STONE_SWORD, STONE_AXE, STONE_PICKAXE, STONE_SHOVEL, STONE_HOE, IRON_SWORD, IRON_AXE, IRON_PICKAXE, IRON_SHOVEL, IRON_HOE, GOLDEN_SWORD, GOLDEN_AXE, GOLDEN_PICKAXE, GOLDEN_SHOVEL, GOLDEN_HOE, DIAMOND_SWORD, DIAMOND_AXE, DIAMOND_PICKAXE, DIAMOND_SHOVEL, DIAMOND_HOE, NETHERITE_SWORD, NETHERITE_AXE, NETHERITE_PICKAXE, NETHERITE_SHOVEL, NETHERITE_HOE, ELYTRA, BOW, CROSSBOW, TRIDENT, FISHING_ROD, SHIELD, SHEARS, FLINT_AND_STEEL, BRUSH, MACE]
+    conditions:
+      - chance: 20
+    levels:
+      '1': [{catalog-combat: lasting}]
+      '2': [{catalog-combat: lasting}]
+      '3': [{catalog-combat: lasting}]
+
+  binding:
+    name: "Tributo al Vacío"
+    trigger: DEATH
+    slots: any
+    materials: *durable_gear
+    conditions:
+      - chance: 40
+    levels:
+      '1': [{catalog-combat: binding}]
+
+  beheading:
+    name: "Segador de Coronas"
+    trigger: KILL
+    slots: hand
+    materials: *swords
+    conditions:
+      - chance: 15
+    levels:
+      '1': [{catalog-combat: behead}]
+
+  berserker:
+    name: "Furia del Titán"
+    trigger: ATTACK
+    slots: hand
+    materials: *axes
+    cooldown: 6s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - target-player: true
+      - chance: 25
+    levels:
+      '1': [{potion: {effect: strength, duration: 2s, amplifier: 0, target: self}}]
+      '2': [{potion: {effect: strength, duration: 3s, amplifier: 0, target: self}}]
+      '3': [{potion: {effect: strength, duration: 4s, amplifier: 1, target: self}}]
+
+  aegis:
+    name: "Égida del Viento"
+    trigger: INJURY
+    slots: armor
+    materials: &arena_armor [LEATHER_HELMET, LEATHER_CHESTPLATE, LEATHER_LEGGINGS, LEATHER_BOOTS, CHAINMAIL_HELMET, CHAINMAIL_CHESTPLATE, CHAINMAIL_LEGGINGS, CHAINMAIL_BOOTS, IRON_HELMET, IRON_CHESTPLATE, IRON_LEGGINGS, IRON_BOOTS, GOLDEN_HELMET, GOLDEN_CHESTPLATE, GOLDEN_LEGGINGS, GOLDEN_BOOTS, DIAMOND_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, DIAMOND_BOOTS, NETHERITE_HELMET, NETHERITE_CHESTPLATE, NETHERITE_LEGGINGS, NETHERITE_BOOTS, TURTLE_HELMET]
+    cooldown: 5s
+    conditions:
+      - catalog-test: fall
+      - chance: 32
+    levels:
+      '1': [{potion: {effect: speed, duration: 3s, amplifier: 0, target: self}}]
+      '2': [{potion: {effect: speed, duration: 4s, amplifier: 0, target: self}}]
+      '3': [{potion: {effect: speed, duration: 5s, amplifier: 1, target: self}}]
+
+  mob_pull:
+    name: "Gravedad del Abismo"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 2s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+    levels:
+      '1': [{catalog-combat: pull}]
+      '2': [{catalog-combat: pull}]
+      '3': [{catalog-combat: pull}]
+
+  mob_nova:
+    name: "Nova de Cacería"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 3s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+    levels:
+      '1': [{catalog-combat: mob-nova}]
+      '2': [{catalog-combat: mob-nova}]
+      '3': [{catalog-combat: mob-nova}]
+
+  sword_ward:
+    name: "Escudo de Adamantio"
+    trigger: DEFEND
+    slots: armor
+    materials: *arena_armor
+    conditions:
+      - catalog-test: enemy-sword
+    levels:
+      '1': [{catalog-combat: sword-ward}]
+      '2': [{catalog-combat: sword-ward}]
+      '3': [{catalog-combat: sword-ward}]
+      '4': [{catalog-combat: sword-ward}]
+
+  arrow_dodge:
+    name: "Paso Fantasma"
+    trigger: INJURY
+    slots: armor
+    materials: *arena_armor
+    cooldown: 5s
+    conditions:
+      - catalog-test: projectile
+      - chance: 20
+    levels:
+      '1': [{catalog-combat: dodge-arrow}]
+
+  weapon_sacrifice:
+    name: "Pacto de la Mella"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+    levels:
+      '1': [{catalog-combat: sacrifice}]
+      '2': [{catalog-combat: sacrifice}]
+      '3': [{catalog-combat: sacrifice}]
+
+  bleed:
+    name: "Marca Carmesí"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 6s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 20
+    levels:
+      '1': [{catalog-combat: bleed}]
+      '2': [{catalog-combat: bleed}]
+      '3': [{catalog-combat: bleed}]
+
+  carrot_planter:
+    name: "Siembra de la Aurora"
+    trigger: INTERACT
+    slots: hands
+    materials: [WOODEN_HOE, STONE_HOE, IRON_HOE, GOLDEN_HOE, DIAMOND_HOE, NETHERITE_HOE]
+    cooldown: 500ms
+    conditions:
+      - sneaking: true
+      - click: right-block
+    levels:
+      '1': [{catalog-combat: plant}]
+
+  damage_guard:
+    name: "Piel del Coloso"
+    trigger: INJURY
+    slots: armor
+    materials: *arena_armor
+    cooldown: 3s
+    conditions:
+      - chance: 25
+    levels:
+      '1': [{set-damage: {multiply: 0.91}}]
+      '2': [{set-damage: {multiply: 0.82}}]
+      '3': [{set-damage: {multiply: 0.73}}]
+
+  player_nova:
+    name: "Ruina del Duelo"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 5s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - target-player: true
+    levels:
+      '1': [{catalog-combat: player-nova}]
+      '2': [{catalog-combat: player-nova}]
+      '3': [{catalog-combat: player-nova}]
+
+  nausea:
+    name: "Vértigo del Vacío"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 5s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - target-player: true
+      - chance: 18
+    levels:
+      '1': [{potion: {effect: nausea, duration: 2s, amplifier: 0, target: target}}]
+      '2': [{potion: {effect: nausea, duration: 3s, amplifier: 0, target: target}}]
+      '3': [{potion: {effect: nausea, duration: 4s, amplifier: 0, target: target}}]
+
+  air_launch:
+    name: "Cólera del Vendaval"
+    trigger: DEFEND
+    slots: armor
+    materials: *arena_armor
+    cooldown: 6s
+    conditions:
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 18
+    levels:
+      '1': [{catalog-combat: launch}]
+      '2': [{catalog-combat: launch}]
+      '3': [{catalog-combat: launch}]
+
+  ender_slayer:
+    name: "Perdición del End"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - catalog-test: end-mob
+    levels:
+      '1': [{set-damage: {multiply: 1.15}}]
+      '2': [{set-damage: {multiply: 1.30}}]
+      '3': [{set-damage: {multiply: 1.45}}]
+
+  cleanse:
+    name: "Purga de la Luz"
+    trigger: PERIODIC
+    slots: armor
+    materials: *arena_armor
+    cooldown: 10s
+    interval: 2s
+    conditions:
+      - chance: 25
+    levels:
+      '1': [{catalog-combat: cleanse}]
+
+  creeper_guard:
+    name: "Legión de la Mecha"
+    trigger: DEFEND
+    slots: armor
+    materials: *arena_armor
+    cooldown: 25s
+    conditions:
+      - catalog-test: near-death
+      - chance: 25
+    levels:
+      '1': [{catalog-combat: creeper}]
+
+  extinguish:
+    name: "Bendición de la Lluvia"
+    trigger: PERIODIC
+    slots: armor
+    materials: *arena_armor
+    cooldown: 4s
+    interval: 1s
+    conditions:
+      - catalog-test: burning
+      - chance: 30
+    levels:
+      '1': [{catalog-combat: extinguish}]
+
+  rocket_boost:
+    name: "Estela de Supernova"
+    trigger: FLIGHT_USE
+    slots: chest
+    materials: [ELYTRA]
+    cooldown: 2s
+    conditions:
+      - catalog-test: rocket
+      - chance: 35
+    levels:
+      '1': [{catalog-combat: rocket}]
+      '2': [{catalog-combat: rocket}]
+      '3': [{catalog-combat: rocket}]
+
+  retaliation_fire:
+    name: "Venganza de Salamandra"
+    trigger: DEFEND
+    slots: armor
+    materials: *arena_armor
+    cooldown: 4s
+    conditions:
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 22
+    levels:
+      '1': [{ignite: 2s}]
+      '2': [{ignite: 3s}]
+      '3': [{ignite: 4s}]
+
+  night_hunter:
+    name: "Cazador de Medianoche"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - catalog-test: night-mob
+    levels:
+      '1': [{set-damage: {multiply: 1.12}}]
+      '2': [{set-damage: {multiply: 1.24}}]
+      '3': [{set-damage: {multiply: 1.36}}]
+
+  reflect:
+    name: "Espejo del Némesis"
+    trigger: DEFEND
+    slots: armor
+    materials: *arena_armor
+    cooldown: 7s
+    conditions:
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - chance: 15
+    levels:
+      '1': [{catalog-combat: reflect}]
+      '2': [{catalog-combat: reflect}]
+      '3': [{catalog-combat: reflect}]
+
+  revive:
+    name: "Renacer del Fénix"
+    trigger: INJURY
+    slots: armor
+    materials: *arena_armor
+    cooldown: 90s
+    conditions:
+      - catalog-test: lethal
+      - chance: 20
+    levels:
+      '1': [{catalog-combat: revive}]
+      '2': [{catalog-combat: revive}]
+      '3': [{catalog-combat: revive}]
+
+  glide_boost:
+    name: "Alas del Vendaval"
+    trigger: FLIGHT_USE
+    slots: chest
+    materials: [ELYTRA]
+    cooldown: 4s
+    conditions:
+      - catalog-test: no-rocket
+    levels:
+      '1': [{catalog-combat: glide}]
+      '2': [{catalog-combat: glide}]
+      '3': [{catalog-combat: glide}]
+
+  critical_finish:
+    name: "Sentencia Final"
+    trigger: ATTACK
+    slots: hand
+    materials: *swords
+    cooldown: 5s
+    conditions:
+      - melee: true
+      - catalog-test: living-target
+      - compare: "damage > 0"
+      - catalog-test: critical
+      - chance: 20
+    levels:
+      '1': [{catalog-combat: execute}]

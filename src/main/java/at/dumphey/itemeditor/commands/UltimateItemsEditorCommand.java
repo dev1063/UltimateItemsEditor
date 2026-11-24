@@ -46,7 +46,14 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
         }
         if (args.length == 0) {
             printHelp(sender);
-        } else if (isPlayer && args[0].equalsIgnoreCase("edit")) {
+            return true;
+        }
+        final String disabled = itemEditor.modules().disabledCommand(args[0], args.length > 1 ? args[1] : null);
+        if (disabled != null) {
+            sender.sendMessage(itemEditor.getStyleService().getLang().prefixed("module-disabled", "%module%", disabled));
+            return true;
+        }
+        if (isPlayer && args[0].equalsIgnoreCase("edit")) {
             handleEdit((Player) sender);
         } else if (isPlayer && args[0].equalsIgnoreCase("reopen")) {
             handleReopen((Player) sender);
@@ -249,6 +256,9 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length > 0 && itemEditor.modules().disabledCommand(args[0], args.length > 2 ? args[1] : null) != null) {
+            return java.util.Collections.emptyList();
+        }
         if (args.length >= 1 && args[0].equalsIgnoreCase("template") && args.length > 1) {
             return templateCommands.tabTemplate(args);
         }
@@ -285,6 +295,7 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
                 possibilities.add("get");
                 possibilities.add("manage");
             }
+            possibilities.removeIf(option -> itemEditor.modules().disabledCommand(option, null) != null);
             possibilities = filterByString(possibilities, args[0]);
         } else if (args.length == 2) {
             if (args[0].equalsIgnoreCase("delete") || args[0].equalsIgnoreCase("get")) {
@@ -328,15 +339,29 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
         sender.sendMessage(
                 " §6§lI§6tem§e§lE§editor §7v" + UltimateItemsEditor.getInstance().getDescription().getVersion());
         sender.sendMessage("");
-        sendIfPlayer(sender, "  §e/ie manage §8- §fOpen the saved items manager (get, give, edit, template, delete).");
-        sendIfPlayer(sender, "  §e/ie template §8- §fApply a template to the item in your hand §7(also: apply, reset, list, inspect, reload).");
+        sendIfPlayer(sender, "  §e/ie manage §8- §fOpen the saved items manager.");
+        if (itemEditor.modules().disabledCommand("template", null) == null) {
+            sendIfPlayer(sender, "  §e/ie template §8- §fApply a template to the item in your hand §7(also: apply, reset, list, inspect, reload).");
+        }
         sender.sendMessage("  §e/ie language §8- §fShow or change the language of templates and messages.");
-        sender.sendMessage("  §e/ie rules §8- §fTrigger rules: list, info, reload, errors, stats.");
-        sendIfPlayer(sender, "  §e/ie tag §8- §fGive the item in your hand a custom id or custom enchantment for rules.");
-        sender.sendMessage("  §e/ie consumable §8- §fItems that run console commands when clicked and are used up.");
-        sender.sendMessage("  §e/ie customitem §8- §fItems with skills: triggers, conditions and actions that belong to the item.");
-        sendIfPlayer(sender, "  §e/ie edit §8- §fEdit the item you are holding.");
-        sendIfPlayer(sender, "  §e/ie reopen §8- §fReopen the editor with the last item.");
+        if (itemEditor.modules().disabledCommand("rules", null) == null) {
+            sender.sendMessage("  §e/ie rules §8- §fTrigger rules: list, info, reload, errors, stats.");
+        }
+        if (itemEditor.modules().disabledCommand("tag", null) == null) {
+            sendIfPlayer(sender, "  §e/ie tag §8- §fGive the item in your hand a custom id or custom enchantment for rules.");
+        }
+        if (itemEditor.modules().disabledCommand("consumable", null) == null) {
+            sender.sendMessage("  §e/ie consumable §8- §fItems that run console commands when clicked and are used up.");
+        }
+        if (itemEditor.modules().disabledCommand("customitem", null) == null) {
+            sender.sendMessage("  §e/ie customitem §8- §fItems with skills: triggers, conditions and actions that belong to the item.");
+        }
+        if (itemEditor.modules().disabledCommand("edit", null) == null) {
+            sendIfPlayer(sender, "  §e/ie edit §8- §fEdit the item you are holding.");
+        }
+        if (itemEditor.modules().disabledCommand("reopen", null) == null) {
+            sendIfPlayer(sender, "  §e/ie reopen §8- §fReopen the editor with the last item.");
+        }
         sendIfPlayer(sender, "  §e/ie save <item> §8- §fSave the item you are holding.");
         sender.sendMessage("  §e/ie delete <name> §8- §fDelete an item.");
         sendIfPlayer(sender, "  §e/ie get <item> §8- §fGive yourself an item.");

@@ -1,5 +1,8 @@
 package at.dumphey.itemeditor.itemeditor;
 
+import at.dumphey.itemeditor.PluginModules;
+import at.dumphey.itemeditor.UltimateItemsEditor;
+
 import at.dumphey.itemeditor.compatibility.VersionUtils;
 import at.dumphey.itemeditor.itemeditor.modules.home.HomeUiScreen;
 import at.dumphey.itemeditor.itemeditor.modules.list.ItemActionsUiScreen;
@@ -39,7 +42,8 @@ public class ItemEditor implements Listener {
     private final ItemStorage itemStorage;
     private final StyleService styleService;
     private final TriggerEngine triggerEngine;
-    private final EditorMenu editorMenu = EditorMenu.withDefaults();
+    private final EditorMenu editorMenu;
+    private final PluginModules modules;
     private final Map<UUID, ItemStack> editing = new HashMap<>();
     /** Players currently editing a saved item (instead of the item in their hand). */
     private final Map<UUID, SavedEdit> editingSaved = new HashMap<>();
@@ -59,12 +63,25 @@ public class ItemEditor implements Listener {
         this.promptHandler = new PromptHandler();
         this.compatUtils = new VersionUtils();
         this.itemStorage = new ItemStorage();
-        this.styleService = new StyleService(at.dumphey.itemeditor.UltimateItemsEditor.getInstance());
-        this.triggerEngine = new TriggerEngine(at.dumphey.itemeditor.UltimateItemsEditor.getInstance());
-        this.triggerEngine.consumables().setLanguageSource(() -> this.styleService.getLang());
+        final UltimateItemsEditor plugin = UltimateItemsEditor.getInstance();
+        this.modules = plugin.modules();
+        this.editorMenu = EditorMenu.withDefaults(modules.vanilla(), modules.customCommands(), modules.customEnchantments());
+        this.styleService = new StyleService(plugin, modules.vanilla());
+        this.triggerEngine = modules.triggerEngine()
+                ? new TriggerEngine(plugin, modules.customCommands(), modules.customEnchantments()) : null;
+        if (modules.customCommands()) {
+            triggerEngine.consumables().setLanguageSource(styleService::getLang);
+        }
+    }
+
+    public PluginModules modules() {
+        return modules;
     }
 
     public void edit(Player player, ItemStack editItem) {
+        if (!modules.itemEditor()) {
+            return;
+        }
         editingSaved.remove(player.getUniqueId());
         setItem(player, editItem);
         uiManager.open(player, new HomeUiScreen(player));
@@ -84,6 +101,9 @@ public class ItemEditor implements Listener {
      * saved entry when they finish (see {@link #finish(Player)}) or discarded on {@link #cancelSavedEdit(Player)}.
      */
     public void editSaved(Player player, SerializedItem saved, int listPage) {
+        if (!modules.itemEditor()) {
+            return;
+        }
         editingSaved.put(player.getUniqueId(), new SavedEdit(saved.getName(), listPage));
         setItem(player, saved.getItemStack().clone()); // clone: the editor mutates the stack in place
         uiManager.open(player, new HomeUiScreen(player));
@@ -272,7 +292,9 @@ public class ItemEditor implements Listener {
     }
 
     public void onQuit(Player player) {
-        triggerEngine.onQuit(player.getUniqueId());
+        if (triggerEngine != null) {
+            triggerEngine.onQuit(player.getUniqueId());
+        }
         editorMenu.forget(player.getUniqueId());
         editingSaved.remove(player.getUniqueId());
         promptHandler.onQuit(player);

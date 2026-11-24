@@ -1,17 +1,24 @@
 package at.dumphey.itemeditor.engine;
 
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.Trident;
 import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerFishEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -81,12 +88,88 @@ final class TriggerSources {
             }
         });
 
+        list.add(new Source<PlayerFishEvent>(TriggerType.FISH_HOOK, PlayerFishEvent.class, EventPriority.HIGH) {
+            @Override
+            boolean fillTyped(PlayerFishEvent e, TriggerContext c) {
+                if (e.getState() != PlayerFishEvent.State.CAUGHT_ENTITY || e.getCaught() == null) return false;
+                c.player = e.getPlayer();
+                c.target = e.getCaught();
+                c.item = c.player.getInventory().getItemInMainHand();
+                c.slot = EquipmentSlot.HAND;
+                if (c.item.getType() != Material.FISHING_ROD) {
+                    c.item = c.player.getInventory().getItemInOffHand();
+                    c.slot = EquipmentSlot.OFF_HAND;
+                }
+                return c.item.getType() == Material.FISHING_ROD;
+            }
+        });
+
+        list.add(new Source<PlayerItemDamageEvent>(TriggerType.ITEM_WEAR, PlayerItemDamageEvent.class, EventPriority.HIGH) {
+            @Override
+            boolean fillTyped(PlayerItemDamageEvent e, TriggerContext c) {
+                c.player = e.getPlayer();
+                c.item = e.getItem();
+                c.slot = EquipmentSlot.HAND;
+                return true;
+            }
+        });
+
+        list.add(new Source<EntityDamageEvent>(TriggerType.INJURY, EntityDamageEvent.class, EventPriority.HIGHEST) {
+            @Override
+            boolean fillTyped(EntityDamageEvent e, TriggerContext c) {
+                if (!(e.getEntity() instanceof Player)) return false;
+                c.player = (Player) e.getEntity();
+                if (e instanceof EntityDamageByEntityEvent) {
+                    c.target = sourceOf(((EntityDamageByEntityEvent) e).getDamager());
+                }
+                return true;
+            }
+        });
+
+        list.add(new Source<PlayerInteractEvent>(TriggerType.FLIGHT_USE, PlayerInteractEvent.class, EventPriority.HIGH) {
+            @Override
+            boolean fillTyped(PlayerInteractEvent e, TriggerContext c) {
+                final ClickKind kind = ClickKind.of(e.getAction());
+                if (kind == null || !kind.isRight() || !e.getPlayer().isGliding()) return false;
+                if (e.getHand() == EquipmentSlot.OFF_HAND && (e.getItem() == null
+                        || e.getItem().getType() != Material.FIREWORK_ROCKET)) return false;
+                c.player = e.getPlayer();
+                c.click = kind;
+                return true;
+            }
+        });
+
         list.add(new Source<BlockBreakEvent>(TriggerType.BLOCK_BREAK, BlockBreakEvent.class, EventPriority.HIGH) {
             @Override
             boolean fillTyped(BlockBreakEvent e, TriggerContext c) {
                 c.player = e.getPlayer();
                 c.block = e.getBlock();
                 c.item = c.player.getInventory().getItemInMainHand();
+                c.slot = EquipmentSlot.HAND;
+                return true;
+            }
+        });
+
+        list.add(new Source<BlockDamageEvent>(TriggerType.BLOCK_DAMAGE, BlockDamageEvent.class, EventPriority.HIGHEST) {
+            @Override
+            boolean fillTyped(BlockDamageEvent e, TriggerContext c) {
+                c.player = e.getPlayer();
+                c.block = e.getBlock();
+                c.item = e.getItemInHand();
+                c.slot = EquipmentSlot.HAND;
+                return true;
+            }
+        });
+
+        list.add(new Source<ProjectileLaunchEvent>(TriggerType.THROW_TRIDENT, ProjectileLaunchEvent.class, EventPriority.HIGH) {
+            @Override
+            boolean fillTyped(ProjectileLaunchEvent e, TriggerContext c) {
+                if (!(e.getEntity() instanceof Trident) || !(e.getEntity().getShooter() instanceof Player)) {
+                    return false;
+                }
+                final Trident trident = (Trident) e.getEntity();
+                c.player = (Player) trident.getShooter();
+                c.item = trident.getItem();
                 c.slot = EquipmentSlot.HAND;
                 return true;
             }
@@ -131,7 +214,7 @@ final class TriggerSources {
                 }
                 c.player = (Player) e.getEntity();
                 c.item = e.getBow();
-                c.slot = EquipmentSlot.HAND;
+                c.slot = e.getHand();
                 return true;
             }
         });

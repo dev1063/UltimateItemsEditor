@@ -1,5 +1,6 @@
 package at.dumphey.itemeditor.commands;
 
+import at.dumphey.itemeditor.engine.EnchantCatalog;
 import at.dumphey.itemeditor.engine.ItemTagData;
 import at.dumphey.itemeditor.engine.ItemTags;
 import at.dumphey.itemeditor.engine.Rule;
@@ -194,8 +195,18 @@ public class RuleCommands {
                     player.sendMessage(lang.prefixed("tag-invalid-level"));
                     return;
                 }
-                tags.setEnchant(meta, args[2], level);
-                commit(player, item, meta);
+                final String enchantId = ItemTags.normalize(args[2]);
+                final EnchantCatalog catalog = engine().enchantCatalog();
+                if (catalog != null && catalog.get(enchantId) != null) {
+                    if (!catalog.apply(item, enchantId, level)) {
+                        player.sendMessage(lang.prefixed("catalog-incompatible"));
+                        return;
+                    }
+                    player.getInventory().setItemInMainHand(item);
+                } else {
+                    tags.setEnchant(meta, enchantId, level);
+                    commit(player, item, meta);
+                }
                 player.sendMessage(level == 0
                         ? lang.prefixed("tag-enchant-removed", "%id%", ItemTags.normalize(args[2]))
                         : lang.prefixed("tag-enchant-set", "%id%", ItemTags.normalize(args[2]), "%level%", String.valueOf(level)));
@@ -242,7 +253,9 @@ public class RuleCommands {
 
     public List<String> tabTag(String[] args) {
         if (args.length == 2) {
-            return filter(TAG_SUB, args[1]);
+            final List<String> options = new ArrayList<>(TAG_SUB);
+            options.removeIf(option -> ItemEditor.INSTANCE.modules().disabledCommand("tag", option) != null);
+            return filter(options, args[1]);
         }
         if (args.length == 3 && args[1].equalsIgnoreCase("item")) {
             return filter(Arrays.asList("clear"), args[2]);

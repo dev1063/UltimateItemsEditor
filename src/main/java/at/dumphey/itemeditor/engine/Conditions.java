@@ -5,6 +5,8 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -88,6 +90,12 @@ public final class Conditions {
             }
             return ctx -> ThreadLocalRandom.current().nextDouble() * 100.0 < percent;
         });
+        engine.registerCondition("melee", (cfg, pc) -> {
+            final boolean required = Cfg.bool(cfg, pc);
+            return ctx -> ctx.event instanceof EntityDamageByEntityEvent
+                    && (((EntityDamageByEntityEvent) ctx.event).getDamager()
+                    instanceof LivingEntity) == required;
+        });
         engine.registerCondition("compare", Conditions::compare);
         engine.registerCondition("item-material", (cfg, pc) -> {
             final Set<String> materials = Cfg.upperSet(cfg);
@@ -109,6 +117,9 @@ public final class Conditions {
             };
         });
         engine.registerCondition("custom-enchant", (cfg, pc) -> {
+            if (!engine.acceptsRule(true)) {
+                throw pc.error("modules.custom-enchantments is disabled");
+            }
             final List<String> ids = new ArrayList<>();
             final List<Integer> mins = new ArrayList<>();
             for (Object o : Cfg.list(cfg)) {

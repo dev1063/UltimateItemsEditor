@@ -90,13 +90,24 @@ public final class TriggerEngine {
     private long rulesFired;
     private long ruleErrors;
 
+    private final boolean customCommands;
+    private final boolean customEnchantments;
+    private final EnchantCatalog enchantCatalog;
+
     public TriggerEngine(JavaPlugin plugin) {
+        this(plugin, true, true);
+    }
+
+    public TriggerEngine(JavaPlugin plugin, boolean customCommands, boolean customEnchantments) {
         this.plugin = plugin;
+        this.customCommands = customCommands;
+        this.customEnchantments = customEnchantments;
         this.tags = new ItemTags(plugin);
-        this.consumables = new ConsumableManager(this);
-        this.customItems = new CustomItemManager(this);
+        this.consumables = customCommands ? new ConsumableManager(this) : null;
+        this.customItems = customCommands ? new CustomItemManager(this) : null;
         Conditions.registerDefaults(this);
         Actions.registerDefaults(this);
+        this.enchantCatalog = customEnchantments ? new EnchantCatalog(this) : null;
         for (TriggerSource source : TriggerSources.defaults()) {
             sources.put(source.type(), source);
         }
@@ -152,9 +163,16 @@ public final class TriggerEngine {
         return RuleLoader.compile(this, id.toLowerCase(), source, config);
     }
 
+    boolean acceptsRule(boolean enchantmentBound) {
+        return enchantmentBound ? customEnchantments : customCommands;
+    }
+
     /** Adds compiled rules and registers the listeners they need. Rules with an id that exists are skipped. */
     public void addRules(Collection<Rule> toAdd) {
         for (Rule rule : toAdd) {
+            if (!acceptsRule(rule.getEnchantId() != null)) {
+                continue;
+            }
             if (rules.containsKey(rule.getId())) {
                 addError(rule.getSource() + ": a rule with the id '" + rule.getId() + "' already exists");
                 continue;
@@ -192,10 +210,15 @@ public final class TriggerEngine {
         enabled = plugin.getConfig().getBoolean("triggers.enabled", true);
         maxRuleErrors = Math.max(1, plugin.getConfig().getInt("triggers.max-rule-errors", 5));
         periodicBaseTicks = Math.max(1, plugin.getConfig().getInt("triggers.periodic-base-ticks", 20));
-        consumables.load(); // independent of the rules (its own switch: consumables.enabled)
+        if (customCommands) {
+            consumables.load();
+        }
+        final List<Rule> catalogRules = enchantCatalog == null ? Collections.emptyList() : enchantCatalog.load();
         if (!enabled) {
             plugin.getLogger().info("Triggers are disabled in config.yml (triggers.enabled).");
-            customItems.load(); // the items still exist and can be given; their skills just do not run
+            if (customCommands) {
+                customItems.load();
+            }
             return;
         }
 
@@ -208,10 +231,13 @@ public final class TriggerEngine {
             }
         }
         final RuleLoader loader = new RuleLoader(this);
-        final List<Rule> loaded = loader.loadAll(folder);
+        final List<Rule> loaded = new ArrayList<>(catalogRules);
+        loaded.addAll(loader.loadAll(folder));
         disabledInFiles = loader.disabledCount();
         addRules(loaded);
-        customItems.load(); // adds the skills of every custom item as rules bound to it
+        if (customCommands) {
+            customItems.load();
+        }
 
         plugin.getLogger().info("Triggers: " + rules.size() + " rule(s) active, " + disabledInFiles + " disabled, "
                 + errors.size() + " error(s), " + listeners.size() + " listener(s).");
@@ -222,8 +248,13 @@ public final class TriggerEngine {
 
     /** Unregisters every listener and task and forgets the rules. Cooldowns are kept. */
     public void shutdown() {
-        consumables.shutdown();
-        customItems.shutdown();
+        if (enchantCatalog != null) {
+            enchantCatalog.stop();
+        }
+        if (customCommands) {
+            consumables.shutdown();
+            customItems.shutdown();
+        }
         for (Listener listener : listeners.values()) {
             HandlerList.unregisterAll(listener);
         }
@@ -571,6 +602,10 @@ public final class TriggerEngine {
     }
 
     /** Custom items: items with skills (rules that belong to the item). */
+    public EnchantCatalog enchantCatalog() {
+        return enchantCatalog;
+    }
+
     public CustomItemManager customItems() {
         return customItems;
     }

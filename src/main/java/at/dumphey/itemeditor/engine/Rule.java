@@ -47,6 +47,17 @@ public final class Rule {
         this.description = description;
     }
 
+    Rule withLevelActions(RuleAction[] levels) {
+        final boolean combat = trigger == TriggerType.ATTACK || trigger == TriggerType.DEFEND || trigger == TriggerType.INJURY;
+        final Condition eligible = ctx -> ctx.level > 0 && ctx.level < levels.length
+                && (!combat || ctx.engine() == null || ctx.engine().enchantCatalog() == null
+                || !ctx.engine().enchantCatalog().isSecondaryDamage())
+                && (conditions == null || conditions.test(ctx));
+        return new Rule(id, source, trigger, itemId, enchantId, materials, slotMask, eligible,
+                new RuleAction[]{ctx -> levels[ctx.level].execute(ctx)}, cooldownMs, cooldownMessage,
+                ignoreCancelled, period, displayName, description);
+    }
+
     public String getId() {
         return id;
     }

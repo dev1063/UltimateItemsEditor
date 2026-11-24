@@ -194,3 +194,7 @@ consumable-info-action: "&7  Action %n% &8» &f%action%"
 consumable-action-added: "Action &e#%n%&f added to &e%id%&f."
 consumable-action-removed: "Action &e#%n%&f removed from &e%id%&f."
 consumable-action-bad-index: "&cAction #%n% does not exist on %id%."
+
+module-disabled: "&cModule unavailable. Check &emodules.%module%&c in config.yml and restart the server."
+
+catalog-incompatible: "&cThis enchantment does not support that item or level."

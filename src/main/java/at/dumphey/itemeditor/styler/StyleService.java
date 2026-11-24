@@ -16,10 +16,11 @@ public class StyleService {
 
     private static final String[] DEFAULT_RESOURCES = {
             "palettes.yml",
-            "enchantsstyle/vanilla.yml", "enchantsstyle/custom.yml", "enchantsstyle/attributes.yml",
-            "messages/english.yml", "messages/spanish.yml"};
+            "enchantsstyle/vanilla.yml", "enchantsstyle/custom.yml", "enchantsstyle/attributes.yml"};
+    private static final String[] MESSAGE_RESOURCES = {"messages/english.yml", "messages/spanish.yml"};
 
     private final JavaPlugin plugin;
+    private final boolean vanilla;
     private StyleConfig config;
     private LanguageManager lang;
     private TemplateManager templates;
@@ -29,23 +30,31 @@ public class StyleService {
     private LoreBuilder loreBuilder;
 
     public StyleService(JavaPlugin plugin) {
+        this(plugin, true);
+    }
+
+    public StyleService(JavaPlugin plugin, boolean vanilla) {
         this.plugin = plugin;
+        this.vanilla = vanilla;
     }
 
     /** Creates the default files that are missing and loads everything. Call once from onEnable. */
     public void load() {
         plugin.saveDefaultConfig();
-        extractDefaultResources();
-
+        extractDefaultResources(MESSAGE_RESOURCES);
         config = new StyleConfig(plugin);
         lang = new LanguageManager(plugin, config);
+        lang.load();
+        if (!vanilla) {
+            return;
+        }
+        extractDefaultResources(DEFAULT_RESOURCES);
         templates = new TemplateManager(plugin);
         enchants = new EnchantStyleManager(plugin);
         attributes = new AttributeStyleManager(plugin);
         metadata = new MetadataManager(plugin);
         loreBuilder = new LoreBuilder(config, lang, enchants, attributes, metadata);
 
-        lang.load();
         templates.load();
         enchants.load();
         attributes.load();
@@ -55,16 +64,20 @@ public class StyleService {
     }
 
     public void reload() {
-        extractDefaultResources();
+        extractDefaultResources(MESSAGE_RESOURCES);
         config.reload();
         lang.load();
+        if (!vanilla) {
+            return;
+        }
+        extractDefaultResources(DEFAULT_RESOURCES);
         templates.load();
         enchants.load();
         attributes.load();
     }
 
-    private void extractDefaultResources() {
-        for (String path : DEFAULT_RESOURCES) {
+    private void extractDefaultResources(String[] resources) {
+        for (String path : resources) {
             final File target = new File(plugin.getDataFolder(), path.replace("/", File.separator));
             if (target.exists()) {
                 continue;
@@ -78,11 +91,11 @@ public class StyleService {
     }
 
     public boolean apply(ItemStack item, Template template) {
-        return loreBuilder.apply(item, template);
+        return vanilla && loreBuilder.apply(item, template);
     }
 
     public boolean reset(ItemStack item) {
-        return loreBuilder.reset(item);
+        return vanilla && loreBuilder.reset(item);
     }
 
     /** Switches to the next available language (saved to config.yml) and returns its name. */

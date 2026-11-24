@@ -62,8 +62,9 @@ public class ItemActionsUiScreen extends UiScreen {
                 : ItemBuilder.uiItem(Material.BARRIER, "§cInvalid item",
                         "Its material is unknown or air.", "You can only delete it.")));
 
-        final String appliedTemplate = ItemEditor.INSTANCE.getStyleService().getMetadata()
-                                                          .getAppliedTemplate(stored.getItemStack().getItemMeta());
+        final boolean vanilla = ItemEditor.INSTANCE.modules().vanilla();
+        final String appliedTemplate = vanilla ? ItemEditor.INSTANCE.getStyleService().getMetadata()
+                .getAppliedTemplate(stored.getItemStack().getItemMeta()) : null;
         final String templateLine = appliedTemplate == null ? "Template: §fnone" : "Template: §f" + appliedTemplate;
         setItem(UiPosition.of(1, 6), new StaticUiItem(this, player, ItemBuilder.uiItem(Material.PAPER, "Item info",
                 "Saved as: §f" + stored.getName(),
@@ -92,14 +93,18 @@ public class ItemActionsUiScreen extends UiScreen {
                         ItemBuilder.uiItem(Material.PLAYER_HEAD, "Give to player",
                                 "Choose an online player and an amount"),
                         () -> open(new ItemGiveUiScreen(player, itemName, listPage))));
-                setItem(UiPosition.of(3, 4), new ActionUiItem(this, player,
-                        ItemBuilder.uiItem(Material.ANVIL, "Edit",
-                                "Open the editor with this item\n§8Your hand is not touched; changes are\n§8saved back to this entry"),
-                        () -> ItemEditor.INSTANCE.editSaved(player, stored, listPage)));
-                setItem(UiPosition.of(3, 6), new ActionUiItem(this, player,
-                        ItemBuilder.uiItem(Material.ENCHANTED_BOOK, lang.msg("gui-actions-template-name"),
-                                lang.msg("gui-actions-template-lore")),
-                        this::openTemplates));
+                if (ItemEditor.INSTANCE.modules().itemEditor()) {
+                    setItem(UiPosition.of(3, 4), new ActionUiItem(this, player,
+                            ItemBuilder.uiItem(Material.ANVIL, "Edit",
+                                    "Open the editor with this item\n§8Your hand is not touched; changes are\n§8saved back to this entry"),
+                            () -> ItemEditor.INSTANCE.editSaved(player, stored, listPage)));
+                }
+                if (vanilla) {
+                    setItem(UiPosition.of(3, 6), new ActionUiItem(this, player,
+                            ItemBuilder.uiItem(Material.ENCHANTED_BOOK, lang.msg("gui-actions-template-name"),
+                                    lang.msg("gui-actions-template-lore")),
+                            this::openTemplates));
+                }
             }
             setItem(UiPosition.of(3, usable ? 8 : 4), new ActionUiItem(this, player,
                     ItemBuilder.uiItem(Material.LAVA_BUCKET, "§cDelete", "Delete this saved item"),

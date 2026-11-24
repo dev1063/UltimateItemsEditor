@@ -1,6 +1,13 @@
 # UltimateItemsEditor - configuration
 # (templates = palettes.yml, enchantment/attribute styles = enchantsstyle/*.yml, texts = messages/<language>.yml)
 
+# Main modules. Restart the server after changing these switches.
+modules:
+  vanilla: true
+  custom-commands: true
+  # Loads the catalog, the custom enchantment editor and enchant-bound rules.
+  custom-enchantments: false
+
 # Language of the plugin messages AND of the texts written into item lore (enchantment names,
 # attribute names, %lang:key% used inside templates). Any file in plugins/UltimateItemsEditor/messages/ works:
 # copy english.yml to e.g. portuguese.yml, translate it and set "language: portuguese".

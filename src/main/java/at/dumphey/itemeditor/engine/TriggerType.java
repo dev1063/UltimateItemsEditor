@@ -13,6 +13,12 @@ public enum TriggerType {
     /** Left/right click in the air or on a block. */
     INTERACT(true),
     BLOCK_BREAK(true),
+    BLOCK_DAMAGE(true),
+    FISH_HOOK(true),
+    ITEM_WEAR(true),
+    INJURY(false),
+    FLIGHT_USE(false),
+    THROW_TRIDENT(true),
     BLOCK_PLACE(true),
     CONSUME(true),
     DROP(true),

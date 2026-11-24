@@ -278,3 +278,7 @@ consumable-info-action: "&7  Acción %n% &8» &f%action%"
 consumable-action-added: "Acción &e#%n%&f añadida a &e%id%&f."
 consumable-action-removed: "Acción &e#%n%&f eliminada de &e%id%&f."
 consumable-action-bad-index: "&cLa acción #%n% no existe en %id%."
+
+module-disabled: "&cMódulo desactivado. Revisa &emodules.%module%&c en config.yml y reinicia el servidor."
+
+catalog-incompatible: "&cEste encantamiento no admite ese ítem o nivel."
