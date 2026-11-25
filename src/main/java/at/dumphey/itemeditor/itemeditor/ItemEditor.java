@@ -65,11 +65,12 @@ public class ItemEditor implements Listener {
         this.itemStorage = new ItemStorage();
         final UltimateItemsEditor plugin = UltimateItemsEditor.getInstance();
         this.modules = plugin.modules();
-        this.editorMenu = EditorMenu.withDefaults(modules.vanilla(), modules.customCommands(), modules.customEnchantments());
-        this.styleService = new StyleService(plugin, modules.vanilla());
+        this.editorMenu = EditorMenu.withDefaults(modules.vanilla(), modules.customCommands(), modules.customEnchantments(),
+                modules.consumables(), VersionUtils.hasModernItemApi());
+        this.styleService = new StyleService(plugin, modules.vanilla() && VersionUtils.hasModernItemApi());
         this.triggerEngine = modules.triggerEngine()
-                ? new TriggerEngine(plugin, modules.customCommands(), modules.customEnchantments()) : null;
-        if (modules.customCommands()) {
+                ? new TriggerEngine(plugin, modules.customCommands(), modules.customEnchantments(), modules.consumables()) : null;
+        if (modules.consumables()) {
             triggerEngine.consumables().setLanguageSource(styleService::getLang);
         }
     }
@@ -80,6 +81,7 @@ public class ItemEditor implements Listener {
 
     public void edit(Player player, ItemStack editItem) {
         if (!modules.itemEditor()) {
+            uiManager.open(player, new HomeUiScreen(player, true));
             return;
         }
         editingSaved.remove(player.getUniqueId());

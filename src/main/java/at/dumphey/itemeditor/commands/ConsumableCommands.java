@@ -22,7 +22,7 @@ import java.util.logging.Level;
 /** /ie consumable ... */
 public class ConsumableCommands {
 
-    private static final List<String> SUBCOMMANDS = Arrays.asList("create", "update", "addcmd", "delcmd", "addaction", "delaction", "set", "give",
+    private static final List<String> SUBCOMMANDS = Arrays.asList("quick", "create", "update", "addcmd", "delcmd", "addaction", "delaction", "set", "give",
             "info", "list", "delete", "reload", "errors");
     private static final List<String> WITH_ID = Arrays.asList("update", "addcmd", "delcmd", "addaction", "delaction", "set", "give", "info", "delete");
 
@@ -50,6 +50,9 @@ public class ConsumableCommands {
             switch (sub) {
                 case "list":
                     list(sender, manager, lang);
+                    break;
+                case "quick":
+                    quick(sender, manager, lang, args);
                     break;
                 case "info":
                     info(sender, manager, lang, args);
@@ -103,6 +106,22 @@ public class ConsumableCommands {
             ItemEditor.INSTANCE.getTriggerEngine().plugin().getLogger().log(Level.SEVERE, "Could not save a consumable", e);
             sender.sendMessage(lang.prefixed("consumable-save-failed"));
         }
+    }
+
+    private void quick(CommandSender sender, ConsumableManager manager, LanguageManager lang, String[] args)
+            throws ConfigException, IOException {
+        if (args.length < 5) {
+            sender.sendMessage(lang.prefixed("consumable-quick-usage"));
+            return;
+        }
+        final Material material = Material.matchMaterial(args[3]);
+        if (material == null || !material.isItem() || material.isAir()) {
+            throw new ConfigException("invalid reward material '" + args[3] + "'");
+        }
+        final String command = String.join(" ", Arrays.copyOfRange(args, 4, args.length));
+        final Consumable reward = manager.createReward(args[2], new ItemStack(material), command,
+                lang.raw("consumable-quick-message"), true);
+        sender.sendMessage(lang.prefixed("consumable-quick-created", "%id%", reward.getId()));
     }
 
     private void list(CommandSender sender, ConsumableManager manager, LanguageManager lang) {
@@ -276,6 +295,10 @@ public class ConsumableCommands {
     private void give(CommandSender sender, ConsumableManager manager, LanguageManager lang, String[] args) {
         final Consumable c = find(sender, manager, lang, args, 2);
         if (c == null) {
+            return;
+        }
+        if (!c.isUsable()) {
+            sender.sendMessage(lang.prefixed("consumable-info-empty"));
             return;
         }
         Player target = null;

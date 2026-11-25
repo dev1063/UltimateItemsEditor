@@ -2,6 +2,7 @@ package at.dumphey.itemeditor.itemeditor.modules.home;
 
 import at.dumphey.itemeditor.itemeditor.modules.attributes.items.OpenManageAttributesUiItem;
 import at.dumphey.itemeditor.itemeditor.modules.behavior.BehaviorEditor;
+import at.dumphey.itemeditor.itemeditor.modules.components.ItemComponentsUiScreen;
 import at.dumphey.itemeditor.itemeditor.modules.book.items.OpenManageBookUiItem;
 import at.dumphey.itemeditor.itemeditor.modules.durability.SetDurabilityItem;
 import at.dumphey.itemeditor.itemeditor.modules.enchantments.CustomEnchantUiScreen;
@@ -162,7 +163,7 @@ public final class EditorMenu {
             final List<EditorCategory> list = new ArrayList<>();
             for (EditorCategory c : categories.values()) {
                 final List<Option> o = options.get(c.getId());
-                if (o != null && !o.isEmpty()) {
+                if (c.getDisabledModule() != null || (o != null && !o.isEmpty())) {
                     list.add(c);
                 }
             }
@@ -211,49 +212,71 @@ public final class EditorMenu {
     }
 
     public static EditorMenu withDefaults(boolean vanilla, boolean customCommands, boolean customEnchantments) {
+        return withDefaults(vanilla, customCommands, customEnchantments, customCommands, true);
+    }
+
+    public static EditorMenu withDefaults(boolean vanilla, boolean customCommands, boolean customEnchantments,
+                                          boolean consumables, boolean modernApi) {
         final EditorMenu menu = new EditorMenu();
 
+        menu.registerCategory(new EditorCategory("appearance", "Appearance", "Name, lore, flags and templates",
+                Material.NAME_TAG, Material.LIGHT_BLUE_STAINED_GLASS_PANE, 10, vanilla ? null : "vanilla"));
+        menu.registerCategory(new EditorCategory("properties", "Properties", "Enchantments, attributes and durability",
+                Material.ENCHANTING_TABLE, Material.ORANGE_STAINED_GLASS_PANE, 20, vanilla ? null : "vanilla"));
+        menu.registerCategory(new EditorCategory("special", "Special items", "Potions, books, heads and leather armor",
+                Material.BREWING_STAND, Material.PURPLE_STAINED_GLASS_PANE, 30, vanilla ? null : "vanilla"));
+        menu.registerCategory(new EditorCategory("behavior", "Comportamiento", "Habilidades y efectos de ítems",
+                Material.COMMAND_BLOCK, Material.LIME_STAINED_GLASS_PANE, 40, customCommands ? null : "custom-commands"));
+        menu.registerCategory(new EditorCategory("custom-enchantments", "Encantamientos custom", "Aplica encantamientos del catálogo",
+                Material.ENCHANTED_BOOK, Material.MAGENTA_STAINED_GLASS_PANE, 50, customEnchantments ? null : "custom-enchantments"));
+        menu.registerCategory(new EditorCategory("consumables", "Consumibles", "Premios para tiendas, cajas y misiones",
+                Material.HONEY_BOTTLE, Material.YELLOW_STAINED_GLASS_PANE, 45, consumables ? null : "consumables"));
+
         if (vanilla) {
-            menu.registerCategory(new EditorCategory("appearance", "Appearance", "Name, lore, flags and templates",
-                    Material.NAME_TAG, Material.LIGHT_BLUE_STAINED_GLASS_PANE, 10));
             menu.registerOption("appearance", "name", 10, ChangeItemNameUiItem::new);
             menu.registerOption("appearance", "lore", 20, OpenManageLoreUiItem::new);
             menu.registerOption("appearance", "flags", 30, OpenManageItemFlagsUiItem::new);
-            menu.registerOption("appearance", "template", 40, OpenTemplatesUiItem::new);
+            if (modernApi) {
+                menu.registerOption("appearance", "template", 40, OpenTemplatesUiItem::new);
+            }
 
-            menu.registerCategory(new EditorCategory("properties", "Properties", "Enchantments, attributes and durability",
-                    Material.ENCHANTING_TABLE, Material.ORANGE_STAINED_GLASS_PANE, 20));
             menu.registerOption("properties", "enchantments", 10, OpenManageEnchantmentsUiItem::new);
-            menu.registerOption("properties", "attributes", 20, OpenManageAttributesUiItem::new);
+            if (modernApi) {
+                menu.registerOption("properties", "attributes", 20, OpenManageAttributesUiItem::new);
+            }
             menu.registerOption("properties", "durability", 30, SetDurabilityItem::new);
             menu.registerOption("properties", "unbreakable", 40, ToggleUnbreakableUiItem::new);
 
-            menu.registerCategory(new EditorCategory("special", "Special items", "Potions, books, heads and leather armor",
-                    Material.BREWING_STAND, Material.PURPLE_STAINED_GLASS_PANE, 30));
             menu.registerOption("special", "potions", 10, OpenManagePotionUiItem::new);
             menu.registerOption("special", "book", 20, OpenManageBookUiItem::new);
             menu.registerOption("special", "skull", 30, SetSkullNameUiItem::new);
             menu.registerOption("special", "leather", 40, SetLeatherColorUiItem::new);
+            if (modernApi) {
+                menu.registerOption("special", "components", 50, (screen, player) -> new ActionUiItem(screen, player,
+                        ItemBuilder.uiItem(Material.COMPARATOR, "Componentes nativos", "Comida, herramientas, rareza y modelos"),
+                        () -> at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getUiManager()
+                                .open(player, new ItemComponentsUiScreen(player))));
+            }
         }
 
         if (customCommands) {
-            menu.registerCategory(new EditorCategory("behavior", "Comportamiento", "Habilidades, consumibles y efectos",
-                    Material.COMMAND_BLOCK, Material.LIME_STAINED_GLASS_PANE, 40));
             menu.registerOption("behavior", "customitems", 10, (screen, player) -> new ActionUiItem(screen, player,
                     ItemBuilder.uiItem(Material.NETHER_STAR, "Ítems personalizados", "Crea ítems con habilidades"),
                     () -> new BehaviorEditor(player).open(false)));
-            menu.registerOption("behavior", "consumables", 20, (screen, player) -> new ActionUiItem(screen, player,
-                    ItemBuilder.uiItem(Material.HONEY_BOTTLE, "Consumibles", "Ejecuta acciones al usar el ítem"),
-                    () -> new BehaviorEditor(player).open(true)));
+
         }
 
         if (customEnchantments) {
-            menu.registerCategory(new EditorCategory("custom-enchantments", "Encantamientos custom", "Aplica encantamientos del catálogo",
-                    Material.ENCHANTED_BOOK, Material.MAGENTA_STAINED_GLASS_PANE, 50));
             menu.registerOption("custom-enchantments", "catalog", 10, (screen, player) -> new ActionUiItem(screen, player,
                     ItemBuilder.uiItem(Material.ENCHANTED_BOOK, "Catálogo de encantamientos"),
                     () -> at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getUiManager()
                             .open(player, new CustomEnchantUiScreen(player))));
+        }
+
+        if (consumables) {
+            menu.registerOption("consumables", "consumables", 20, (screen, player) -> new ActionUiItem(screen, player,
+                    ItemBuilder.uiItem(Material.HONEY_BOTTLE, "Consumibles", "Ejecuta acciones al usar el ítem"),
+                    () -> new BehaviorEditor(player).open(true)));
         }
 
         return menu;

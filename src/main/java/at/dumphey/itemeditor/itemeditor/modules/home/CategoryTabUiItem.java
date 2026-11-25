@@ -40,13 +40,15 @@ final class CategoryTabUiItem extends UiItem {
         lore.add("\u00a78" + description);
         lore.add("");
         lore.add(selected ? lang.msg("gui-hub-tab-selected") : lang.msg("gui-hub-tab-click"));
-        lore.add("\u00a78" + lang.msg("gui-hub-tab-count", "%count%", String.valueOf(optionCount)));
+        lore.add(category.getDisabledModule() == null
+                ? "\u00a78" + lang.msg("gui-hub-tab-count", "%count%", String.valueOf(optionCount))
+                : lang.msg("gui-module-disabled"));
 
         final ItemBuilder builder = ItemBuilder.of(category.getIcon())
                                                .withName((selected ? "\u00a7a\u00a7l" : "\u00a77") + name)
                                                .withLore(lore)
                                                .withAllHideFlags();
-        if (selected) {
+        if (selected && at.dumphey.itemeditor.compatibility.VersionUtils.hasModernItemApi()) {
             builder.editMeta(meta -> meta.setEnchantmentGlintOverride(true));
         }
         return builder.build();

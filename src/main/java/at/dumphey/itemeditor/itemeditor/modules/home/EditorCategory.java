@@ -14,6 +14,7 @@ public final class EditorCategory {
     private final Material icon;
     private final Material accent;
     private final int order;
+    private final String disabledModule;
 
     /**
      * @param id     lowercase id, used to register options
@@ -22,7 +23,13 @@ public final class EditorCategory {
      * @param order  tabs are shown from the lowest to the highest (the defaults use 10, 20, 30 to leave room)
      */
     public EditorCategory(String id, String name, String description, Material icon, Material accent, int order) {
-        this.id = id.toLowerCase();
+        this(id, name, description, icon, accent, order, null);
+    }
+
+    public EditorCategory(String id, String name, String description, Material icon, Material accent, int order,
+                          String disabledModule) {
+        this.disabledModule = disabledModule;
+        this.id = id.toLowerCase(java.util.Locale.ROOT);
         this.name = name;
         this.description = description;
         this.icon = icon;
@@ -43,11 +50,15 @@ public final class EditorCategory {
     }
 
     public Material getIcon() {
-        return icon;
+        return disabledModule == null ? icon : Material.ORANGE_STAINED_GLASS_PANE;
     }
 
     public Material getAccent() {
-        return accent;
+        return disabledModule == null ? accent : Material.ORANGE_STAINED_GLASS_PANE;
+    }
+
+    public String getDisabledModule() {
+        return disabledModule;
     }
 
     public int getOrder() {

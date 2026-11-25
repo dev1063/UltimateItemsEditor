@@ -15,8 +15,13 @@ Editor de ítems para Minecraft Java. Permite personalizar y guardar ítems, cre
 ## Instalación y actualización
 
 1. Usa **Java 21** y un servidor compatible con la **API de Spigot 1.21.4**, que es la versión contra la que se compila el proyecto.
-2. Coloca `UltimateItemsEditor-2.1.0.jar` en `plugins/` e inicia el servidor. El plugin crea `plugins/UltimateItemsEditor/`.
+2. Coloca `UltimateItemsEditor-2.2.0.jar` en `plugins/` e inicia el servidor. El plugin crea `plugins/UltimateItemsEditor/`.
 3. Da el permiso `ie.*` a los administradores que usarán el editor. En el juego, sostén un ítem y ejecuta `/ie edit`.
+
+El mismo JAR comprueba las capacidades de Bukkit al arrancar. En APIs antiguas omite el catálogo de
+encantamientos custom, los componentes, los conjuntos, los atributos avanzados y las plantillas. Esta ruta
+base está pensada para las ramas 1.18 y 1.19. La compilación contra 1.21.4 no certifica todas las revisiones
+de Minecraft ni la rama 26.x.
 
 **PlaceholderAPI** es opcional. Si está instalado, el editor puede resolver sus placeholders en nombres y lore.
 
@@ -29,15 +34,31 @@ Si vienes de **Item Editor 2**, retira su JAR para evitar el conflicto por `/ie`
 | Opción en `config.yml` | Predeterminado | Función |
 | --- | --- | --- |
 | `modules.vanilla` | `true` | Pestañas de aspecto, propiedades e ítems especiales. Incluye nombres, lore, encantamientos vanilla, atributos, durabilidad, pociones, libros, cabezas, cuero y plantillas. |
-| `modules.custom-commands` | `true` | Pestaña **Comportamiento**, consumibles, ítems con habilidades y reglas generales o vinculadas a ítems. |
+| `modules.custom-commands` | `true` | Pestaña **Comportamiento**, ítems con habilidades y reglas generales o vinculadas a ítems. |
+| `modules.consumables` | `true` | Pestaña **Consumibles**, asistente para premios y activación independiente. |
 | `modules.custom-enchantments` | `false` | Catálogo, aplicación, adquisición y reglas de encantamientos personalizados. |
 
-Reinicia el servidor al cambiar un módulo. Los ítems guardados y el idioma siguen disponibles con los tres módulos desactivados. `triggers.enabled`, `consumables.enabled` y `customitems.enabled` controlan funciones dentro de los módulos.
+Reinicia el servidor al cambiar un módulo. Los ítems guardados y el idioma siguen disponibles con los módulos desactivados. Las pestañas de los módulos
+apagados muestran cristal naranja. Si un archivo anterior carece de `modules.consumables`, conserva el estado heredado
+de `modules.custom-commands`. `triggers.enabled`, `consumables.enabled` y `customitems.enabled` controlan funciones dentro de los módulos.
 
 - **Editar lo que sostienes:** `/ie edit`. El editor recuerda la pestaña y página. Usa **Finalizar** para devolver el ítem editado a la mano.
 - **Administrar ítems guardados:** `/ie save <nombre>` guarda una copia. `/ie manage` o `/ie list` abre la lista paginada para previsualizar, obtener, entregar, editar o borrar. Las plantillas se pueden aplicar a un ítem o a toda la lista cuando el módulo vanilla está activo.
 - **Configurar comportamiento:** en **Comportamiento**, elige **Ítems personalizados** o **Consumibles**. Puedes crear una definición a partir de una copia del ítem editado o elegir una existente. Las definiciones se guardan al aplicar cada cambio.
 - **Configurar sonidos de la interfaz:** `gui.click-sounds` controla el sonido de clic.
+
+### Componentes y conjuntos vanilla
+
+En APIs con soporte moderno, **Ítems especiales → Componentes nativos** permite editar nutrición, saturación,
+velocidad de herramientas, durabilidad, rareza vanilla, `CustomModelData` y brillo. Los modelos necesitan un
+paquete de recursos.
+
+Los conjuntos de armadura se activan con `vanilla-armor-sets.enabled: true` y un reinicio. Edita `armor-sets.yml`
+para definir bonos por número de piezas, y asigna su ID a las piezas desde **Componentes nativos → Conjunto de
+armadura**. Los valores se acumulan a partir del umbral. Usa `exact: true` para un bono que solo se aplica al vestir
+ese número de piezas. Una pieza puede ser un élitro. Los bonos de atributo se actualizan al detectar un cambio
+de equipo. Si Paper expone su evento de armadura, se actualizan al tick siguiente. En Spigot se comprueban
+durante el segundo, repartiendo jugadores entre ticks.
 
 ## Encantamientos personalizados
 
@@ -194,7 +215,22 @@ Recarga con `/ie rules reload`. Los límites controlan el trabajo programado por
 
 ### Consumibles
 
-En **Comportamiento → Consumibles** puedes elegir el clic de activación, la cantidad gastada y el cooldown, y añadir o eliminar condiciones y acciones. Puedes editar texto y comandos desde el chat. La entrada de comandos en la GUI se escribe sin la barra inicial.
+En **Consumibles → Crear premio rápido**, elige el ID y el comando de recompensa. Añade un mensaje y activa o quita
+sonido y partículas. El premio se guarda en una sola operación cuando su configuración es válida. Abre **Comando
+para tiendas y cajas** para ver el comando de entrega. Por consola también puedes crearlo desde un material:
+
+```text
+/ie consumable quick llave_vip PAPER say %player% canjeó su premio
+/ie consumable give llave_vip Steve 1
+```
+
+El comando `give` admite un jugador y una cantidad. Las tiendas, cajas o misiones que ejecutan comandos de consola
+pueden usarlo con el placeholder de jugador que defina ese plugin. En el premio, `%player%` se sustituye por el jugador
+que lo canjea. Los integradores Java pueden consultar `ConsumableRewards` en Bukkit ServicesManager y pedir un ítem
+etiquetado mediante `createItem(id)`. La API no requiere MythicMobs. Para limitar la activación a posiciones de la
+barra rápida, añade `hotbar-slot: [1, 2]` a las condiciones YAML. Las posiciones van de 1 a 9.
+
+Desde el gestor de consumibles puedes elegir el clic de activación, la cantidad gastada y el cooldown, y añadir o eliminar condiciones y acciones. Puedes editar texto y comandos desde el chat. La entrada de comandos en la GUI se escribe sin la barra inicial.
 
 ```text
 /ie consumable create recompensa
@@ -272,6 +308,7 @@ Las rutas de esta tabla son relativas a `plugins/UltimateItemsEditor/`.
 | --- | --- |
 | `config.yml` | Módulos, idioma, plantillas, adquisición y rendimiento. |
 | `custom-enchantments.yml` | Catálogo, rarezas, niveles y efectos. |
+| `armor-sets.yml` | Bonos de atributo para conjuntos parciales y completos. |
 | `rules/*.yml` | Reglas adicionales para eventos. |
 | `consumables/<id>.yml`, `customitems/<id>.yml` | Definiciones de consumibles e ítems con habilidades. |
 | `items/` | Ítems guardados desde el editor y los comandos. |
@@ -289,7 +326,7 @@ Abre `pom.xml` en IntelliJ IDEA como proyecto Maven y selecciona **JDK 21**. Con
 mvn clean package
 ```
 
-El JAR se genera en `target/UltimateItemsEditor-2.1.0.jar`.
+El JAR se genera en `target/UltimateItemsEditor-2.2.0.jar`.
 
 - **Editor:** `ItemEditor.INSTANCE.getEditorMenu()` permite registrar categorías con `registerCategory` y botones con `registerOption`. Para traducir una pestaña, usa `gui-cat-<id>` y `gui-cat-<id>-desc` en los mensajes. Los submenús pueden reutilizar `PageBar`.
 - **Reglas:** con un módulo de reglas activo, `ItemEditor.INSTANCE.getTriggerEngine()` expone `registerCondition` y `registerAction`. Registra las extensiones antes de recargar las definiciones para que puedan compilarlas.

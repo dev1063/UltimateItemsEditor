@@ -1,7 +1,7 @@
 name: UltimateItemsEditor
 version: '${project.version}'
 main: at.dumphey.itemeditor.UltimateItemsEditor
-api-version: '1.20'
+api-version: '1.18'
 prefix: UltimateItemsEditor
 authors: [ Dumphey ]
 description: 'Ultimate items editor: item editor, saved items manager and configurable item templates.'

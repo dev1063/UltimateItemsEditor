@@ -50,6 +50,20 @@ public final class Conditions {
             final int mask = Slots.parse(cfg, pc);
             return ctx -> (mask & Slots.bit(ctx.slot)) != 0;
         });
+        engine.registerCondition("hotbar-slot", (cfg, pc) -> {
+            int slots = 0;
+            for (Object entry : Cfg.list(cfg)) {
+                final double value = Cfg.number(entry, pc);
+                if (!(value >= 1 && value <= 9) || value != (int) value) {
+                    throw pc.error("expected hotbar positions 1 to 9");
+                }
+                slots |= 1 << ((int) value - 1);
+            }
+            if (slots == 0) throw pc.error("expected at least one hotbar position");
+            final int mask = slots;
+            return ctx -> ctx.slot == org.bukkit.inventory.EquipmentSlot.HAND
+                    && (mask & (1 << ctx.player.getInventory().getHeldItemSlot())) != 0;
+        });
         engine.registerCondition("sneaking", (cfg, pc) -> {
             final boolean expected = Cfg.bool(cfg, pc);
             return ctx -> ctx.player.isSneaking() == expected;

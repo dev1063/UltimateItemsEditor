@@ -111,11 +111,15 @@ public final class TriggerEngine {
     }
 
     public TriggerEngine(JavaPlugin plugin, boolean customCommands, boolean customEnchantments) {
+        this(plugin, customCommands, customEnchantments, customCommands);
+    }
+
+    public TriggerEngine(JavaPlugin plugin, boolean customCommands, boolean customEnchantments, boolean consumablesEnabled) {
         this.plugin = plugin;
         this.customCommands = customCommands;
         this.customEnchantments = customEnchantments;
         this.tags = new ItemTags(plugin);
-        this.consumables = customCommands ? new ConsumableManager(this) : null;
+        this.consumables = consumablesEnabled ? new ConsumableManager(this) : null;
         this.customItems = customCommands ? new CustomItemManager(this) : null;
         Conditions.registerDefaults(this);
         Actions.registerDefaults(this);
@@ -224,7 +228,7 @@ public final class TriggerEngine {
         periodicBaseTicks = Math.max(1, plugin.getConfig().getInt("triggers.periodic-base-ticks", 20));
         periodicSlices = Math.max(1, Math.min(periodicBaseTicks,
                 Math.min(20, plugin.getConfig().getInt("enchantment-performance.periodic-spread-ticks", 8))));
-        if (customCommands) {
+        if (consumables != null) {
             consumables.load();
         }
         final List<Rule> catalogRules = enchantCatalog == null ? Collections.emptyList() : enchantCatalog.load();
@@ -236,6 +240,7 @@ public final class TriggerEngine {
             return;
         }
 
+        if (!customCommands && !customEnchantments) return; // Consumables run on their own interaction listener.
         final File folder = new File(plugin.getDataFolder(), "rules");
         if (!folder.exists()) {
             try {
@@ -268,8 +273,10 @@ public final class TriggerEngine {
         if (enchantCatalog != null) {
             enchantCatalog.stop();
         }
-        if (customCommands) {
+        if (consumables != null) {
             consumables.shutdown();
+        }
+        if (customCommands) {
             customItems.shutdown();
         }
         for (Listener listener : listeners.values()) {

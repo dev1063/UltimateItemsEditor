@@ -1,12 +1,15 @@
 package at.dumphey.itemeditor;
 
+import at.dumphey.itemeditor.api.ConsumableRewards;
 import at.dumphey.itemeditor.commands.UltimateItemsEditorCommand;
 import at.dumphey.itemeditor.compatibility.VersionUtils;
 import at.dumphey.itemeditor.events.InventoryClickListener;
 import at.dumphey.itemeditor.events.PlayerChatListener;
 import at.dumphey.itemeditor.events.PlayerQuitListener;
 import at.dumphey.itemeditor.itemeditor.ItemEditor;
+import at.dumphey.itemeditor.itemeditor.modules.components.ArmorSets;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.plugin.ServicePriority;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,6 +23,7 @@ public final class UltimateItemsEditor extends JavaPlugin {
 
     private static UltimateItemsEditor instance;
     private PluginModules modules;
+    private ArmorSets armorSets;
 
     public static UltimateItemsEditor getInstance() {
         return instance;
@@ -40,12 +44,22 @@ public final class UltimateItemsEditor extends JavaPlugin {
         warnIfLegacyPluginIsPresent();
 
         saveDefaultConfig();
-        modules = new PluginModules(getConfig());
+        modules = new PluginModules(getConfig(), VersionUtils.hasModernItemApi());
 
         final ItemEditor editor = ItemEditor.INSTANCE;
         editor.getStyleService().load();
+        if (modules.vanilla() && VersionUtils.hasModernItemApi()
+                && getConfig().getBoolean("vanilla-armor-sets.enabled", false)) {
+            armorSets = new ArmorSets(this);
+            armorSets.start();
+        }
         if (modules.triggerEngine()) {
             editor.getTriggerEngine().load();
+        }
+
+        if (modules.consumables()) {
+            getServer().getServicesManager().register(ConsumableRewards.class,
+                    editor.getTriggerEngine().consumables()::createRewardItem, this, ServicePriority.Normal);
         }
 
         registerCommands();
@@ -61,6 +75,10 @@ public final class UltimateItemsEditor extends JavaPlugin {
         }
     }
 
+    public ArmorSets armorSets() {
+        return armorSets;
+    }
+
     public PluginModules modules() {
         return modules;
     }
@@ -74,6 +92,11 @@ public final class UltimateItemsEditor extends JavaPlugin {
         if (modules == null) {
             return;
         }
+        if (armorSets != null) {
+            armorSets.stop();
+            armorSets = null;
+        }
+        getServer().getServicesManager().unregisterAll(this);
         final ItemEditor editor = ItemEditor.INSTANCE;
         if (modules.triggerEngine()) {
             editor.getTriggerEngine().shutdown();

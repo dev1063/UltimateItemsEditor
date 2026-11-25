@@ -1,0 +1,12 @@
+# Enable vanilla-armor-sets.enabled in config.yml and restart.
+# The same set ID can be applied to any armor slot, including an elytra.
+# Bonuses stack unless exact: true requires that exact number of equipped pieces.
+sets:
+  bastion:
+    bonuses:
+      - {pieces: 2, attribute: "minecraft:armor", amount: 2}
+      - {pieces: 4, attribute: "minecraft:knockback_resistance", amount: 0.15}
+  explorador:
+    bonuses:
+      - {pieces: 2, attribute: "minecraft:movement_speed", amount: 0.015}
+      - {pieces: 4, attribute: "minecraft:max_health", amount: 4}

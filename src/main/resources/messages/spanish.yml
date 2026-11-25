@@ -298,3 +298,10 @@ catalog-rarity-uncommon: "Poco común"
 catalog-rarity-rare: "Raro"
 catalog-rarity-epic: "Épico"
 catalog-rarity-legendary: "Legendario"
+
+gui-module-disabled: "Núcleo desactivado"
+gui-module-restart: "Cambia la opción en config.yml y reinicia."
+
+consumable-quick-usage: "&7Uso /ie consumable quick <id> <material> <comando>"
+consumable-quick-message: "&aPremio canjeado, %player%."
+consumable-quick-created: "&aPremio listo. Entrega con &e/ie consumable give %id% <jugador> 1"

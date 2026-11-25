@@ -112,12 +112,7 @@ public final class Actions {
             if (name.startsWith("minecraft:")) {
                 name = name.substring("minecraft:".length());
             }
-            final Particle particle;
-            try {
-                particle = Particle.valueOf(name.toUpperCase(Locale.ROOT));
-            } catch (IllegalArgumentException ex) {
-                throw pc.child("particle").error("unknown particle '" + name + "'");
-            }
+            final Particle particle = particleByName(name, pc);
             if (particle.getDataType() != Void.class) {
                 throw pc.child("particle").error("'" + name + "' requires extra data; use a particle such as flame, heart or happy_villager");
             }
@@ -267,7 +262,8 @@ public final class Actions {
                 final Entity e = target.resolve(ctx);
                 if (e instanceof LivingEntity) {
                     final LivingEntity living = (LivingEntity) e;
-                    final AttributeInstance max = living.getAttribute(Attribute.MAX_HEALTH);
+                    final Attribute health = at.dumphey.itemeditor.compatibility.VersionUtils.maxHealthAttribute();
+                    final AttributeInstance max = health == null ? null : living.getAttribute(health);
                     final double limit = max == null ? 20.0 : max.getValue();
                     living.setHealth(Math.max(0, Math.min(limit, living.getHealth() + amount)));
                 }
@@ -485,6 +481,29 @@ public final class Actions {
             throw pc.error("missing 'amount'");
         }
         return new Object[]{Cfg.number(map.get("amount"), pc.child("amount")), who(map.get("target"), def, pc.child("target"))};
+    }
+
+    private static Particle particleByName(String name, ParseContext pc) throws ConfigException {
+        final String constant = name.toUpperCase(Locale.ROOT);
+        try {
+            return Particle.valueOf(constant);
+        } catch (IllegalArgumentException ex) {
+            final String alternative;
+            switch (constant) {
+                case "HAPPY_VILLAGER": alternative = "VILLAGER_HAPPY"; break;
+                case "VILLAGER_HAPPY": alternative = "HAPPY_VILLAGER"; break;
+                case "ANGRY_VILLAGER": alternative = "VILLAGER_ANGRY"; break;
+                case "VILLAGER_ANGRY": alternative = "ANGRY_VILLAGER"; break;
+                case "EXPLOSION": alternative = "EXPLOSION_LARGE"; break;
+                case "EXPLOSION_LARGE": alternative = "EXPLOSION"; break;
+                default: throw pc.error("unknown particle '" + name + "'");
+            }
+            try {
+                return Particle.valueOf(alternative);
+            } catch (IllegalArgumentException ignored) {
+                throw pc.error("unknown particle '" + name + "'");
+            }
+        }
     }
 
     private static PotionEffectType potionType(String name) {

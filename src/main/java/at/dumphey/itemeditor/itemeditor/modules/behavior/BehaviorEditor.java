@@ -50,12 +50,19 @@ public final class BehaviorEditor {
     }
 
     public void open(boolean consumable) {
-        if (!player.hasPermission(Permissions.WILDCARD)) {
+        if (!player.hasPermission(Permissions.WILDCARD) || engine == null
+                || (consumable ? consumables() == null : customItems() == null)) {
+            return;
+        }
+        if (!(consumable ? consumables().isEnabled() : customItems().isEnabled())) {
+            player.sendMessage("§cEsta función está desactivada en config.yml.");
             return;
         }
         final Menu menu = new Menu(consumable ? "Consumibles" : "Ítems personalizados",
                 () -> show(new HomeUiScreen(player)));
-        menu.button(53, Material.LIME_DYE, "Crear desde el ítem editado", () -> create(consumable));
+        menu.button(53, Material.LIME_DYE, consumable ? "Crear premio rápido" : "Crear desde el ítem editado",
+                consumable ? this::beginReward : () -> create(false));
+        if (consumable) menu.button(45, Material.PAPER, "Crear borrador", () -> create(true));
         final List<String> ids = new ArrayList<>();
         if (consumable) {
             for (Consumable item : consumables().all()) {
@@ -72,6 +79,59 @@ public final class BehaviorEditor {
                     consumable ? () -> consumable(id) : () -> customItem(id));
         }
         show(menu);
+    }
+
+    private void beginReward() {
+        final ItemStack edited = ItemEditor.INSTANCE.getItem(player);
+        if (edited == null || edited.getType().isAir()) {
+            player.sendMessage("§cEdita primero el ítem que servirá como premio.");
+            return;
+        }
+        final ItemStack source = edited.clone();
+        input("Escribe el ID del premio, por ejemplo llave_vip.", id -> {
+            final String normalized = at.dumphey.itemeditor.engine.ItemTags.normalize(id);
+            if (!at.dumphey.itemeditor.engine.ItemTags.isValidId(normalized)
+                    || consumables().get(normalized) != null) {
+                throw new ConfigException("Usa un ID libre de hasta 48 caracteres (a-z, 0-9, _ o -).");
+            }
+            reward(new RewardDraft(normalized, source));
+        }, () -> open(true));
+    }
+
+    private void reward(RewardDraft draft) {
+        final Runnable again = () -> reward(draft);
+        final Menu menu = new Menu("Premio rápido: " + draft.id, () -> open(true));
+        menu.choice(Material.COMMAND_BLOCK, draft.command == null ? "Añadir comando" : "Cambiar comando",
+                () -> input("Escribe el comando sin /. Usa %player% para el jugador.",
+                        value -> draft.command = value, again),
+                draft.command == null ? "Obligatorio" : draft.command);
+        menu.choice(Material.PAPER, "Mensaje de canje", () -> input("Escribe el mensaje o none para quitarlo.",
+                value -> draft.message = value.trim().equalsIgnoreCase("none") ? null : value, again),
+                draft.message == null ? "Sin mensaje" : draft.message);
+        menu.choice(Material.NOTE_BLOCK, draft.effects ? "Sonido y partículas: sí" : "Sonido y partículas: no",
+                () -> { draft.effects = !draft.effects; again.run(); });
+        if (draft.command != null) {
+            menu.button(53, Material.LIME_DYE, "Guardar premio", () -> {
+                if (attempt(() -> consumables().createReward(draft.id, draft.source, draft.command,
+                        draft.message, draft.effects))) {
+                    consumable(draft.id);
+                }
+            });
+        }
+        show(menu);
+    }
+
+    private static final class RewardDraft {
+        final String id;
+        final ItemStack source;
+        String command;
+        String message = "&aPremio canjeado, %player%.";
+        boolean effects = true;
+
+        RewardDraft(String id, ItemStack source) {
+            this.id = id;
+            this.source = source;
+        }
     }
 
     private void create(boolean consumable) {
@@ -117,8 +177,14 @@ public final class BehaviorEditor {
         menu.choice(Material.HONEY_BOTTLE, "Cantidad por uso: " + item.getAmount(), () ->
                 input("Escribe la cantidad que se gasta en cada uso (1–64).",
                         value -> consumables().setOption(id, "amount", value), back));
+        menu.button(47, Material.PAPER, "Comando para tiendas y cajas", () ->
+                player.sendMessage("§eie consumable give " + id
+                        + " <jugador> 1"));
         menu.button(53, Material.CHEST, "Recibir 1 consumible", () -> change(() -> {
             final Consumable current = consumables().get(id);
+            if (current != null && !current.isUsable()) {
+                throw new ConfigException("Añade un comando o acción antes de entregar el consumible.");
+            }
             if (current != null) {
                 consumables().give(current, player, 1);
                 player.sendMessage("§aRecibiste " + id + ".");
@@ -312,7 +378,7 @@ public final class BehaviorEditor {
     private void particles(BiConsumer<String, Object> add, Runnable back) {
         final Menu menu = new Menu("Partículas", back);
         Arrays.stream(Particle.values())
-                .filter(particle -> particle.getDataType() == Void.class && particle.isRegistered())
+                .filter(particle -> particle.getDataType() == Void.class && !particle.name().startsWith("LEGACY_"))
                 .sorted(Comparator.comparing(Enum::name))
                 .forEach(particle -> menu.choice(Material.BLAZE_POWDER, particle.name(),
                         () -> add.accept("particle", particle.name())));

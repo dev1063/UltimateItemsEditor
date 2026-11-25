@@ -201,20 +201,18 @@ public final class ConsumableManager {
         e.setCancelled(true); // A matching activation owns the click, including cooldown and amount checks.
         final UUID uuid = player.getUniqueId();
         final String cooldownKey = COOLDOWN_PREFIX + c.getId();
-        if (c.getCooldownMs() > 0 && !engine.cooldowns().tryUse(uuid, cooldownKey, c.getCooldownMs())) {
-            final long remaining = engine.cooldowns().remaining(uuid, cooldownKey);
-            send(player, "consumable-cooldown", "%seconds%", String.format(Locale.ROOT, "%.1f", remaining / 1000.0));
-            return;
-        }
-
         final ItemStack stack = player.getInventory().getItem(slot);
         if (stack == null || !c.getId().equals(idOf(stack))) {
-            engine.cooldowns().set(uuid, cooldownKey, 0);
             return; // the item changed under us (another plugin): never consume something else
         }
         if (stack.getAmount() < c.getAmount()) {
-            engine.cooldowns().set(uuid, cooldownKey, 0);
             send(player, "consumable-not-enough", "%amount%", String.valueOf(c.getAmount()));
+            return;
+        }
+
+        if (c.getCooldownMs() > 0 && !engine.cooldowns().tryUse(uuid, cooldownKey, c.getCooldownMs())) {
+            final long remaining = engine.cooldowns().remaining(uuid, cooldownKey);
+            send(player, "consumable-cooldown", "%seconds%", String.format(Locale.ROOT, "%.1f", remaining / 1000.0));
             return;
         }
 
@@ -292,12 +290,37 @@ public final class ConsumableManager {
 
     /** Creates a consumable from an item (the copy is stored, so later changes to your item do not matter). */
     public Consumable create(String id, ItemStack item) throws ConfigException, IOException {
+        return create(id, item, Collections.emptyList(), Collections.emptyList());
+    }
+
+    /** Saves a shop or crate reward only after its command and feedback pass the normal compiler. */
+    public Consumable createReward(String id, ItemStack item, String command, String message, boolean effects)
+            throws ConfigException, IOException {
+        if (command == null || command.trim().isEmpty()) {
+            throw new ConfigException("a shop reward needs a command");
+        }
+        final List<Object> actions = new ArrayList<>(3);
+        if (message != null && !message.trim().isEmpty()) {
+            actions.add(Collections.singletonMap("message", message));
+        }
+        if (effects) {
+            actions.add(Collections.singletonMap("sound", "entity.player.levelup"));
+            actions.add(Collections.singletonMap("particle", "happy_villager"));
+        }
+        return create(id, item, Collections.singletonList(command), actions);
+    }
+
+    private Consumable create(String id, ItemStack item, List<String> commands, List<Object> actions)
+            throws ConfigException, IOException {
+        if (!enabled) {
+            throw new ConfigException("consumables.enabled is false");
+        }
         id = ItemTags.normalize(id);
         final ParseContext pc = new ParseContext(engine, "consumables/" + id + ".yml");
         if (!ItemTags.isValidId(id)) {
             throw pc.error("'" + id + "' is not a valid id (a-z, 0-9, _ and -)");
         }
-        if (byId.containsKey(id)) {
+        if (byId.containsKey(id) || fileOf(id).exists()) {
             throw pc.error("already exists");
         }
         final ItemStack clean = clean(item, pc);
@@ -307,7 +330,10 @@ public final class ConsumableManager {
         raw.put("click", "right");
         raw.put("amount", 1);
         raw.put("cooldown", "1s");
-        raw.put("commands", new ArrayList<Object>());
+        raw.put("commands", new ArrayList<>(commands));
+        if (!actions.isEmpty()) {
+            raw.put("actions", new ArrayList<>(actions));
+        }
         return store(id, raw);
     }
 
@@ -431,6 +457,12 @@ public final class ConsumableManager {
     /** Gives a player {@code amount} of the consumable. Returns how many items did not fit and were dropped. */
     public int give(Consumable consumable, Player target, int amount) {
         return Inventories.give(target, stamped(consumable), amount);
+    }
+
+    /** Returns a fresh tagged item for a shop, crate or external reward bridge. */
+    public ItemStack createRewardItem(String id) {
+        final Consumable consumable = enabled ? get(id) : null;
+        return consumable == null || !consumable.isUsable() ? null : stamped(consumable);
     }
 
     private Consumable require(String id) throws ConfigException {

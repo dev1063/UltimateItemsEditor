@@ -246,7 +246,7 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
 
     private void handleEdit(Player player) {
         final ItemStack hand = player.getInventory().getItemInMainHand();
-        if (hand.getType() == Material.AIR) {
+        if (hand.getType() == Material.AIR && itemEditor.modules().itemEditor()) {
             player.sendMessage(Messages.CHAT_PREFIX + "You need to hold an item in your main hand.");
             return;
         }

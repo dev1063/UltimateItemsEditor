@@ -214,3 +214,10 @@ catalog-rarity-uncommon: "Uncommon"
 catalog-rarity-rare: "Rare"
 catalog-rarity-epic: "Epic"
 catalog-rarity-legendary: "Legendary"
+
+gui-module-disabled: "Module disabled"
+gui-module-restart: "Change the setting in config.yml and restart."
+
+consumable-quick-usage: "&7Usage /ie consumable quick <id> <material> <command>"
+consumable-quick-message: "&aReward redeemed, %player%."
+consumable-quick-created: "&aReward ready. Deliver with &e/ie consumable give %id% <player> 1"

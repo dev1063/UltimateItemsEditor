@@ -38,9 +38,15 @@ public class HomeUiScreen extends UiScreen {
     private static final int FIRST_OPTION_SLOT = UiPosition.of(2, 0);
 
     private final EditorMenu.View view;
+    private final boolean readOnly;
 
     public HomeUiScreen(Player player) {
+        this(player, false);
+    }
+
+    public HomeUiScreen(Player player, boolean readOnly) {
         super(player, 54, ItemEditor.INSTANCE.getStyleService().getLang().msg("gui-hub-title"));
+        this.readOnly = readOnly;
         this.view = ItemEditor.INSTANCE.getEditorMenu().view(player.getUniqueId());
     }
 
@@ -50,7 +56,7 @@ public class HomeUiScreen extends UiScreen {
         final LanguageManager lang = ItemEditor.INSTANCE.getStyleService().getLang();
         final List<EditorCategory> categories = menu.categories();
 
-        setItem(UiPosition.of(0, 0), new GetItemUiItem(this, player));
+        if (!readOnly) setItem(UiPosition.of(0, 0), new GetItemUiItem(this, player));
         setItem(UiPosition.of(0, 8), infoItem(lang));
 
         if (categories.isEmpty()) {
@@ -74,6 +80,15 @@ public class HomeUiScreen extends UiScreen {
                 ItemBuilder.of(current.getAccent()).withName("\u00a70").withAllHideFlags().build());
         for (int x = 0; x < 9; x++) {
             setItem(UiPosition.of(1, x), rail);
+        }
+
+        if (current.getDisabledModule() != null) {
+            setItem(31, new StaticUiItem(this, player, ItemBuilder.uiItem(Material.ORANGE_STAINED_GLASS_PANE,
+                    lang.msg("gui-module-disabled"), "modules." + current.getDisabledModule(),
+                    lang.msg("gui-module-restart"))));
+            addFooter(lang, 1);
+            fillEmptyWithFiller();
+            return;
         }
 
         // options, with pages
@@ -118,6 +133,7 @@ public class HomeUiScreen extends UiScreen {
     }
 
     private void addFooter(LanguageManager lang, int pageCount) {
+        if (readOnly) return;
         final boolean editingSaved = ItemEditor.INSTANCE.isEditingSaved(player);
 
         if (editingSaved) {
@@ -151,7 +167,7 @@ public class HomeUiScreen extends UiScreen {
         if (item != null) {
             lines.add(lang.msg("gui-hub-info-type", "%type%", NameUtils.enumToFriendlyName(item.getType().name())));
             lines.add(lang.msg("gui-hub-info-amount", "%amount%", String.valueOf(item.getAmount())));
-            final String template = ItemEditor.INSTANCE.modules().vanilla()
+            final String template = ItemEditor.INSTANCE.getStyleService().isVanillaStyleEnabled()
                     ? ItemEditor.INSTANCE.getStyleService().getMetadata().getAppliedTemplate(item.getItemMeta()) : null;
             if (template != null) {
                 lines.add(lang.msg("gui-hub-info-template", "%template%", template));

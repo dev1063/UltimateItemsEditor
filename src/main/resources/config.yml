@@ -5,8 +5,14 @@
 modules:
   vanilla: true
   custom-commands: true
+  # Controls the reward editor, commands and activation listener independently.
+  consumables: true
   # Loads the catalog, the custom enchantment editor and enchant-bound rules.
   custom-enchantments: false
+
+# Optional native attribute bonuses for equipped armor of the same set.
+vanilla-armor-sets:
+  enabled: false
 
 # Language of the plugin messages AND of the texts written into item lore (enchantment names,
 # attribute names, %lang:key% used inside templates). Any file in plugins/UltimateItemsEditor/messages/ works:

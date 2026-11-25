@@ -106,6 +106,10 @@ public class StyleService {
         return lang.setLanguage(next) ? next : lang.getActiveLang();
     }
 
+    public boolean isVanillaStyleEnabled() {
+        return vanilla;
+    }
+
     public StyleConfig getConfig() {
         return config;
     }

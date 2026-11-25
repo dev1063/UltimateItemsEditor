@@ -62,7 +62,7 @@ public class ItemActionsUiScreen extends UiScreen {
                 : ItemBuilder.uiItem(Material.BARRIER, "§cInvalid item",
                         "Its material is unknown or air.", "You can only delete it.")));
 
-        final boolean vanilla = ItemEditor.INSTANCE.modules().vanilla();
+        final boolean vanilla = ItemEditor.INSTANCE.getStyleService().isVanillaStyleEnabled();
         final String appliedTemplate = vanilla ? ItemEditor.INSTANCE.getStyleService().getMetadata()
                 .getAppliedTemplate(stored.getItemStack().getItemMeta()) : null;
         final String templateLine = appliedTemplate == null ? "Template: §fnone" : "Template: §f" + appliedTemplate;
