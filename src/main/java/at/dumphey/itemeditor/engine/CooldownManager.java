@@ -25,14 +25,12 @@ public final class CooldownManager {
     /** If the key is ready, starts its cooldown and returns true. */
     public boolean tryUse(UUID player, String key, long durationMs) {
         final long now = clock.getAsLong();
-        final Map<String, Long> map = expiries.get(player);
-        if (map != null) {
-            final Long until = map.get(key);
-            if (until != null && until > now) {
-                return false;
-            }
+        final Map<String, Long> map = expiries.computeIfAbsent(player, keyId -> new HashMap<>());
+        final Long until = map.get(key);
+        if (until != null && until > now) {
+            return false;
         }
-        set(player, key, durationMs);
+        put(map, key, now, durationMs);
         return true;
     }
 
@@ -56,8 +54,12 @@ public final class CooldownManager {
             expiries.put(player, map);
         }
         final long now = clock.getAsLong();
-        map.put(key, now + durationMs);
-        if (map.size() > PRUNE_ABOVE) {
+        put(map, key, now, durationMs);
+    }
+
+    private void put(Map<String, Long> map, String key, long now, long durationMs) {
+        final Long previous = map.put(key, now + durationMs);
+        if (previous == null && map.size() > PRUNE_ABOVE) {
             for (Iterator<Long> it = map.values().iterator(); it.hasNext(); ) {
                 if (it.next() <= now) {
                     it.remove();

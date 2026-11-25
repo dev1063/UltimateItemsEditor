@@ -24,9 +24,18 @@ public final class ItemTags {
 
     public static final Pattern ID = Pattern.compile("[a-z0-9_\\-]{1,48}");
     private static final ItemTagData NONE = null;
+    private static final int CACHE_ENTRIES = 512;
+    private static final int CACHE_TAG_LENGTH = 2048;
 
     private final NamespacedKey keyItem;
     private final NamespacedKey keyEnchants;
+    // Keyed by the serialized tag, so edits and equipment swaps never reuse stale enchantments.
+    private final Map<String, ItemTagData> parsed = new LinkedHashMap<String, ItemTagData>(64, 0.75f, true) {
+        @Override
+        protected boolean removeEldestEntry(Map.Entry<String, ItemTagData> eldest) {
+            return size() > CACHE_ENTRIES;
+        }
+    };
 
     public ItemTags(Plugin plugin) {
         this.keyItem = new NamespacedKey(plugin, "item_id");
@@ -51,7 +60,11 @@ public final class ItemTags {
         if (id == null && enchants == null) {
             return NONE;
         }
-        return new ItemTagData(id, parseEnchants(enchants));
+        if (enchants == null || enchants.isEmpty()) {
+            return id == null ? NONE : new ItemTagData(id, Collections.emptyMap());
+        }
+        final ItemTagData decoded = decodedEnchants(enchants);
+        return id == null ? decoded : new ItemTagData(id, decoded.getEnchants());
     }
 
     public void setItemId(ItemMeta meta, String id) {
@@ -94,6 +107,13 @@ public final class ItemTags {
 
     public static boolean isValidId(String id) {
         return id != null && ID.matcher(id).matches();
+    }
+
+    private ItemTagData decodedEnchants(String raw) {
+        if (raw.length() > CACHE_TAG_LENGTH) return new ItemTagData(null, parseEnchants(raw));
+        synchronized (parsed) {
+            return parsed.computeIfAbsent(raw, value -> new ItemTagData(null, parseEnchants(value)));
+        }
     }
 
     private static Map<String, Integer> parseEnchants(String raw) {

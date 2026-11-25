@@ -55,8 +55,8 @@ import java.util.concurrent.ThreadLocalRandom;
 final class CatalogEffects implements Listener {
     private static final int MAX_SUMMONS = 48;
     private static final int MAX_MAGMA = 128;
-    private static final int MAX_PENDING_VOLLEYS = 64;
     private final TriggerEngine engine;
+    private final CatalogWorkQueue work;
     private final NamespacedKey warp;
     private final Map<UUID, Summon> summons = new HashMap<>();
     private final Map<Block, BlockState> magma = new HashMap<>();
@@ -64,13 +64,12 @@ final class CatalogEffects implements Listener {
     private final Map<Block, DropPlan> collections = new HashMap<>();
     private Map<Material, ItemStack> cooked;
     private BukkitTask collectionCleanup;
-    private int pendingVolleys;
-    private int pendingSummons;
     private boolean listening;
     private long generation;
 
-    CatalogEffects(TriggerEngine engine) {
+    CatalogEffects(TriggerEngine engine, CatalogWorkQueue work) {
         this.engine = engine;
+        this.work = work;
         this.warp = new NamespacedKey(engine.plugin(), "catalog_warp_arrow");
 
         engine.registerAction("catalog-exp", (cfg, pc) -> {
@@ -104,14 +103,12 @@ final class CatalogEffects implements Listener {
                 throw pc.error("expected undead or golem");
             }
             return ctx -> {
-                if (ctx.target instanceof Mob && summons.size() + pendingSummons < MAX_SUMMONS
+                if (ctx.target instanceof Mob && summons.size() < MAX_SUMMONS
                         && !summons.containsKey(ctx.target.getUniqueId()) && ctx.event instanceof Cancellable) {
                     final LivingEntity enemy = (LivingEntity) ctx.target;
                     final Player owner = ctx.player;
                     final Cancellable attack = (Cancellable) ctx.event;
-                    pendingSummons++;
-                    later(1, () -> {
-                        pendingSummons--;
+                    work.offer(CatalogWorkQueue.SPAWN, () -> {
                         if (!attack.isCancelled()) summon(owner, enemy, golem);
                     });
                 }
@@ -212,7 +209,7 @@ final class CatalogEffects implements Listener {
 
     private void volley(TriggerContext ctx) {
         final Projectile shot = projectile(ctx);
-        if (shot == null || pendingVolleys >= MAX_PENDING_VOLLEYS) return;
+        if (shot == null) return;
         final int arrows = Math.min(4, ctx.level);
         final Player player = ctx.player;
         final Cancellable event = (Cancellable) ctx.event;
@@ -221,14 +218,13 @@ final class CatalogEffects implements Listener {
         final double speed = Math.min(3.5, velocity.length());
         if (speed < 0.1) return;
         final double damage = shot instanceof Arrow ? Math.min(((Arrow) shot).getDamage(), 4.0) : 2.0;
-        pendingVolleys++;
-        later(1, () -> {
-            pendingVolleys--;
+        final Vector normalized = velocity.multiply(speed / velocity.length());
+        work.offer(CatalogWorkQueue.SPAWN, () -> {
             if (event.isCancelled() || !player.isOnline() || player.getWorld() != origin.getWorld()
                     || !origin.getWorld().isChunkLoaded(origin.getBlockX() >> 4, origin.getBlockZ() >> 4)) return;
             for (int i = 0; i < arrows; i++) {
                 final double angle = Math.toRadians((i % 2 == 0 ? 1 : -1) * (5 + 5 * (i / 2)));
-                final Vector direction = velocity.clone().normalize().rotateAroundY(angle).multiply(speed);
+                final Vector direction = normalized.clone().rotateAroundY(angle);
                 origin.getWorld().spawn(origin, Arrow.class, arrow -> {
                     arrow.setShooter(player);
                     arrow.setVelocity(direction);
@@ -285,8 +281,10 @@ final class CatalogEffects implements Listener {
         }
     }
 
-    void guard(Player owner, LivingEntity enemy) {
-        summon(owner, enemy, EntityType.CREEPER);
+    void guard(Player owner, LivingEntity enemy, Cancellable attack) {
+        work.offer(CatalogWorkQueue.SPAWN, () -> {
+            if (!attack.isCancelled()) summon(owner, enemy, EntityType.CREEPER);
+        });
     }
 
     private void summon(Player owner, LivingEntity enemy, boolean golem) {
@@ -389,11 +387,22 @@ final class CatalogEffects implements Listener {
 
     private void magmaStep(TriggerContext ctx) {
         if (magma.size() >= MAX_MAGMA) return;
-        final Block feet = ctx.player.getLocation().getBlock();
-        if (!ctx.player.isOnGround() && feet.getType() != Material.LAVA) return;
+        final Player player = ctx.player;
+        final World world = player.getWorld();
+        final int radius = Math.min(2, Math.max(1, ctx.level));
+        work.offer(CatalogWorkQueue.MAGMA, () -> {
+            if (player.isOnline() && !player.isDead() && player.getWorld() == world) {
+                magmaStep(player, radius);
+            }
+        });
+    }
+
+    private void magmaStep(Player player, int radius) {
+        if (magma.size() >= MAX_MAGMA) return;
+        final Block feet = player.getLocation().getBlock();
+        if (!player.isOnGround() && feet.getType() != Material.LAVA) return;
         final Block below = feet.getType() == Material.LAVA ? feet : feet.getRelative(0, -1, 0);
         final World world = below.getWorld();
-        final int radius = Math.min(2, Math.max(1, ctx.level));
         for (int x = -radius; x <= radius; x++) {
             for (int z = -radius; z <= radius && magma.size() < MAX_MAGMA; z++) {
                 if (!world.isChunkLoaded((below.getX() + x) >> 4, (below.getZ() + z) >> 4)) continue;
@@ -404,7 +413,7 @@ final class CatalogEffects implements Listener {
                     final BlockState original = block.getState();
                     final BlockState replacement = block.getState();
                     replacement.setType(Material.BASALT);
-                    final EntityBlockFormEvent event = new EntityBlockFormEvent(ctx.player, block, replacement);
+                    final EntityBlockFormEvent event = new EntityBlockFormEvent(player, block, replacement);
                     Bukkit.getPluginManager().callEvent(event);
                     if (event.isCancelled() || block.getType() != original.getType()
                             || event.getNewState().getType() != Material.BASALT) continue;
@@ -446,8 +455,6 @@ final class CatalogEffects implements Listener {
 
     void stop() {
         generation++;
-        pendingVolleys = 0;
-        pendingSummons = 0;
         if (collectionCleanup != null) {
             collectionCleanup.cancel();
             collectionCleanup = null;

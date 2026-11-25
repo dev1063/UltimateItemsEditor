@@ -176,20 +176,30 @@ public class LanguageManager {
         return result;
     }
 
-    /** data folder first (so owners can edit), bundled jar resource second; null if neither exists. */
+    /** Disk overrides bundled defaults, so upgrading adds new message keys without overwriting translations. */
     private YamlConfiguration loadFile(String lang) {
         final File file = new File(plugin.getDataFolder(), "messages" + File.separator + lang + ".yml");
+        final YamlConfiguration defaults = loadBundled(lang);
         if (file.exists()) {
             try {
-                return YamlConfiguration.loadConfiguration(file);
+                final YamlConfiguration configured = YamlConfiguration.loadConfiguration(file);
+                if (defaults != null) configured.setDefaults(defaults);
+                return configured;
             } catch (Exception ex) {
                 plugin.getLogger().log(Level.WARNING, "Failed to load messages/" + lang + ".yml", ex);
             }
         }
+        return defaults;
+    }
+
+    private YamlConfiguration loadBundled(String lang) {
         final InputStream stream = plugin.getResource("messages/" + lang + ".yml");
-        if (stream == null) {
+        if (stream == null) return null;
+        try (InputStreamReader reader = new InputStreamReader(stream, StandardCharsets.UTF_8)) {
+            return YamlConfiguration.loadConfiguration(reader);
+        } catch (java.io.IOException ex) {
+            plugin.getLogger().log(Level.WARNING, "Failed to read bundled language " + lang, ex);
             return null;
         }
-        return YamlConfiguration.loadConfiguration(new InputStreamReader(stream, StandardCharsets.UTF_8));
     }
 }

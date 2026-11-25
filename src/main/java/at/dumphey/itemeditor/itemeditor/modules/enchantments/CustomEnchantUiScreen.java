@@ -81,7 +81,8 @@ public final class CustomEnchantUiScreen extends UiScreen {
             final EnchantCatalog.Entry entry = catalog.get(id);
             button(i % PAGE_SIZE, Material.ENCHANTED_BOOK, entry == null ? id : entry.name(),
                     () -> open(new CustomEnchantUiScreen(player, id, page)),
-                    "ID: " + id, "Nivel aplicado: " + applied.getOrDefault(id, 0));
+                    "ID: " + id, "Nivel aplicado: " + applied.getOrDefault(id, 0),
+                    entry == null ? "" : rarityLabel(entry.rarityKey()));
         }
         if (pages > 1) {
             final UiItem[] controls = PageBar.create(this, player, page, pages, "", next -> {
@@ -100,7 +101,8 @@ public final class CustomEnchantUiScreen extends UiScreen {
             for (int i = 1; i <= entry.maxLevel(); i++) {
                 final int level = i;
                 button(i - 1, Material.ENCHANTED_BOOK, entry.name() + " " + level,
-                        () -> apply(catalog, level), level == appliedLevel ? "Nivel actual" : "Clic para aplicar");
+                        () -> apply(catalog, level), rarityLabel(entry.rarityKey(level)),
+                        level == appliedLevel ? "Nivel actual" : "Clic para aplicar");
             }
         } else {
             info("Encantamiento no disponible para este ítem.");
@@ -121,6 +123,11 @@ public final class CustomEnchantUiScreen extends UiScreen {
             }
         }
         player.sendMessage(ItemEditor.INSTANCE.getStyleService().getLang().prefixed("catalog-incompatible"));
+    }
+
+    private String rarityLabel(String key) {
+        return ItemEditor.INSTANCE.getStyleService().getLang().msg("catalog-rarity-label", "%rarity%",
+                ItemEditor.INSTANCE.getStyleService().getLang().msg("catalog-rarity-" + key));
     }
 
     private void info(String label) {

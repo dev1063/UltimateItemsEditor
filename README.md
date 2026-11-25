@@ -1,382 +1,295 @@
 # UltimateItemsEditor
 
-UltimateItemsEditor is an in-game item editor with a saved items manager (preview, get, give, edit, delete) and configurable item templates (language, enchantment and attribute styles). It is based on Item Editor 2 by Dumphey.
+Editor de ítems para Minecraft Java. Permite personalizar y guardar ítems, crear consumibles y habilidades, y aplicar **59 encantamientos personalizados**. El editor se abre con `/ie edit`. Basado en Item Editor 2 de Dumphey.
 
-## Build from source
+- [Instalación y actualización](#instalación-y-actualización)
+- [Módulos y menús](#módulos-y-menús)
+- [Encantamientos personalizados](#encantamientos-personalizados)
+- [Adquisición, libros y rarezas](#adquisición-libros-y-rarezas)
+- [Rendimiento](#rendimiento)
+- [Consumibles, habilidades y reglas](#consumibles-habilidades-y-reglas)
+- [Comandos y permisos](#comandos-y-permisos)
+- [Archivos y estilos](#archivos-y-estilos)
+- [Compilación y extensiones](#compilación-y-extensiones)
 
-Use JDK 21 and Maven 3.9. From the directory containing `pom.xml`, run:
+## Instalación y actualización
 
-```sh
-mvn clean package
-```
+1. Usa **Java 21** y un servidor compatible con la **API de Spigot 1.21.4**, que es la versión contra la que se compila el proyecto.
+2. Coloca `UltimateItemsEditor-2.1.0.jar` en `plugins/` e inicia el servidor. El plugin crea `plugins/UltimateItemsEditor/`.
+3. Da el permiso `ie.*` a los administradores que usarán el editor. En el juego, sostén un ítem y ejecuta `/ie edit`.
 
-Maven downloads the build dependencies and writes the plugin to `target/UltimateItemsEditor-2.1.0.jar`.
+**PlaceholderAPI** es opcional. Si está instalado, el editor puede resolver sus placeholders en nombres y lore.
 
-## Getting Started
+Al actualizar, reemplaza el JAR y conserva la carpeta de datos. Las opciones nuevas tienen valores predeterminados aunque tu `config.yml` sea anterior. La migración del catálogo añade los campos de rareza nuevos y conserva los valores configurados en el servidor. Puedes consultar las claves nuevas en el [config.yml incluido](src/main/resources/config.yml).
 
-To get started, put `UltimateItemsEditor-<version>.jar` in `plugins/`, restart your server and simply put an item in your hand and type `/ie edit`. That's the only command you'll need to edit an item - everything else can be achieved in the Item Editor menu.
+Si vienes de **Item Editor 2**, retira su JAR para evitar el conflicto por `/ie`. En el primer arranque, el plugin intenta migrar `plugins/ItemEditor/` a `plugins/UltimateItemsEditor/`. Si la carpeta de destino ya contiene archivos, la migración se omite.
 
-## Features
+## Módulos y menús
 
-- **Zero configuration**: Just drop the plugin in your `plugins/` directory, reload, and you are good to go.
-- **Intuitive editing**: Rename, add lore, enchant, set attributes and item flags, change leather color, create custom potions, and more - all from the same menu.
-- **Save items**: You can save (`/ie save`) and retrieve (`/ie get <name>`) any (created) items or give them to your players (`/ie give <player> <item> <amount>`).
-- **Placeholders**: Give your players personalized items like '{player_name}'s axe' using [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/).
-- ... and much more!
+| Opción en `config.yml` | Predeterminado | Función |
+| --- | --- | --- |
+| `modules.vanilla` | `true` | Pestañas de aspecto, propiedades e ítems especiales. Incluye nombres, lore, encantamientos vanilla, atributos, durabilidad, pociones, libros, cabezas, cuero y plantillas. |
+| `modules.custom-commands` | `true` | Pestaña **Comportamiento**, consumibles, ítems con habilidades y reglas generales o vinculadas a ítems. |
+| `modules.custom-enchantments` | `false` | Catálogo, aplicación, adquisición y reglas de encantamientos personalizados. |
 
-## Modules
+Reinicia el servidor al cambiar un módulo. Los ítems guardados y el idioma siguen disponibles con los tres módulos desactivados. `triggers.enabled`, `consumables.enabled` y `customitems.enabled` controlan funciones dentro de los módulos.
 
-Set the switches in `plugins/UltimateItemsEditor/config.yml` and restart the server to apply a change.
+- **Editar lo que sostienes:** `/ie edit`. El editor recuerda la pestaña y página. Usa **Finalizar** para devolver el ítem editado a la mano.
+- **Administrar ítems guardados:** `/ie save <nombre>` guarda una copia. `/ie manage` o `/ie list` abre la lista paginada para previsualizar, obtener, entregar, editar o borrar. Las plantillas se pueden aplicar a un ítem o a toda la lista cuando el módulo vanilla está activo.
+- **Configurar comportamiento:** en **Comportamiento**, elige **Ítems personalizados** o **Consumibles**. Puedes crear una definición a partir de una copia del ítem editado o elegir una existente. Las definiciones se guardan al aplicar cada cambio.
+- **Configurar sonidos de la interfaz:** `gui.click-sounds` controla el sonido de clic.
+
+## Encantamientos personalizados
+
+1. Activa `modules.custom-enchantments: true` y reinicia. Deja `triggers.enabled: true` para ejecutarlos.
+2. Abre **`/ie edit` → Encantamientos custom → Catálogo de encantamientos**. El menú muestra las opciones compatibles con el material y los encantamientos ya aplicados.
+3. Elige el nivel o quita uno existente. También puedes ejecutar `/ie tag enchant <id> <nivel>` con el ítem en la mano. El nivel `0` elimina la etiqueta. `/ie tag info` muestra las etiquetas instaladas.
+
+El [catálogo configurable](src/main/resources/custom-enchantments.yml) define los nombres, materiales, ranuras, activadores, probabilidades, cooldowns y niveles. Cada entrada acepta hasta 16 niveles consecutivos desde el nivel 1. Usa `enabled: false` para desactivar una entrada, `/ie rules reload` para recargar y `/ie rules errors` para revisar entradas inválidas.
+
+<details>
+<summary>Ver los 59 encantamientos y sus identificadores</summary>
+
+| Encantamiento | ID | Rareza base | Niveles | Efecto |
+| --- | --- | --- | ---: | --- |
+| **Pacto de sangre** | `blood_pact` | Raro | 3 | Cura al golpear cuerpo a cuerpo con una espada. |
+| **Filo de brasas** | `ember_edge` | Poco común | 3 | Incendia al objetivo con golpes de espada. |
+| **Guardia férrea** | `iron_ward` | Raro | 3 | El peto reduce el daño recibido en combate. |
+| **Paso veloz** | `swiftstep` | Raro | 2 | Las botas dan velocidad al esprintar. |
+| **Enfoque minero** | `miner_focus` | Poco común | 3 | El pico da prisa al romper bloques. |
+| **Fortuna de la experiencia** | `fortune_xp` | Raro | 3 | Multiplica la XP obtenida al minar o matar. |
+| **Pacto del nigromante** | `necromancer` | Épico | 1 | Puede invocar un esqueleto o zombi contra una criatura atacante. |
+| **Quebramontañas** | `tunneler` | Épico | 4 | Excava planos de 3×3 a 6×6 con pico o pala. |
+| **Pulso de la veta** | `veinminer` | Épico | 4 | Extrae menas conectadas del mismo mineral con un pico. |
+| **Lluvia de filos** | `multishot` | Legendario | 4 | Añade flechas no recuperables al usar arco, ballesta o tridente. |
+| **Centinelas de acero** | `steel_guardians` | Legendario | 1 | Puede invocar un gólem contra una criatura atacante. |
+| **Flecha del vacío** | `end_arrow` | Épico | 1 | Teletransporta a un lugar seguro cerca del impacto de la flecha. |
+| **Salto del cometa** | `hare` | Poco común | 3 | Las botas dan Salto I–III. |
+| **Senda de la caldera** | `magma_step` | Épico | 2 | Solidifica temporalmente lava expuesta y magma bajo las botas. |
+| **Quebracristales** | `glass_shatter` | Común | 1 | Rompe al instante cristal y paneles con un pico. |
+| **Titán del bosque** | `tree_feller` | Épico | 4 | Tala troncos conectados del mismo tipo con un hacha. |
+| **Imán del saqueador** | `auto_collect` | Raro | 1 | Envía los drops al inventario y deja el sobrante en el suelo. |
+| **Flecha Cataclismo** | `blast_arrow` | Épico | 1 | Explota al impactar y daña a entidades cercanas. |
+| **Anzuelo de Hidra** | `toxic_hook` | Poco común | 3 | Envenena al jugador enganchado con la caña. |
+| **Anzuelo del Averno** | `ember_hook` | Poco común | 3 | Incendia al jugador enganchado con la caña. |
+| **Aguijón Esmeralda** | `poison_arrow` | Poco común | 1 | Envenena al objetivo al impactar. |
+| **Colmillo de Víbora** | `viper` | Poco común | 3 | Puede envenenar con golpes de espada. |
+| **Filo del Invierno Eterno** | `frostblade` | Raro | 3 | Puede congelar y ralentizar con golpes de espada. |
+| **Corte del Eclipse** | `blindblade` | Poco común | 3 | Puede cegar con golpes de espada. |
+| **Proyectil del Ocaso** | `blind_arrow` | Poco común | 1 | Da a la flecha una posibilidad de cegar al impactar. |
+| **Veredicto del Trueno** | `thunderblade` | Raro | 3 | Puede mostrar un rayo y añadir daño al golpe de espada. |
+| **Cisma del Caos** | `disorder` | Épico | 1 | Puede desordenar la barra rápida del rival. |
+| **Ladrón de Corazas** | `disarmer` | Legendario | 1 | Puede mover una pieza de armadura del rival a su inventario si tiene espacio. |
+| **Forja del Sol** | `autocook` | Raro | 1 | Puede fundir los drops compatibles con recetas de horno. |
+| **Acero de la Marchitez** | `venom_blade` | Épico | 3 | Puede aplicar Wither con golpes de espada. |
+| **Arco de la Marchitez** | `venom_bow` | Épico | 1 | Da a la flecha una posibilidad de aplicar Wither. |
+| **Forja Demoníaca** | `demon_reforged` | Épico | 3 | Puede reparar la espada al matar a otro jugador. |
+| **Último Latido** | `ultimate_life` | Raro | 3 | Puede reparar el equipo al recibir daño de durabilidad que lo rompería. |
+| **Tributo al Vacío** | `binding` | Común | 1 | Puede hacer desaparecer el ítem equipado al morir. |
+| **Segador de Coronas** | `beheading` | Raro | 1 | Puede soltar la cabeza de un enemigo compatible al matarlo. |
+| **Furia del Titán** | `berserker` | Raro | 3 | Puede otorgar fuerza al golpear a un jugador con un hacha. |
+| **Égida del Viento** | `aegis` | Común | 3 | Puede otorgar velocidad al sufrir daño por caída. |
+| **Gravedad del Abismo** | `mob_pull` | Común | 3 | Atrae hacia ti a la criatura golpeada. |
+| **Nova de Cacería** | `mob_nova` | Raro | 3 | Daña a criaturas cercanas en un radio que sube con el nivel. |
+| **Escudo de Adamantio** | `sword_ward` | Épico | 4 | Reduce el daño de espadas enemigas un 2 % por nivel. |
+| **Paso Fantasma** | `arrow_dodge` | Épico | 1 | Puede evitar el daño de una flecha enemiga. |
+| **Pacto de la Mella** | `weapon_sacrifice` | Poco común | 3 | Repara la espada dañada a cambio de reducir el daño del golpe. |
+| **Marca Carmesí** | `bleed` | Raro | 3 | Puede causar sangrado mediante tres pulsos de daño. |
+| **Siembra de la Aurora** | `carrot_planter` | Común | 1 | Planta zanahorias en 3×3 con un azadón y clic derecho al agacharse. |
+| **Piel del Coloso** | `damage_guard` | Poco común | 3 | Puede reducir el daño recibido. |
+| **Ruina del Duelo** | `player_nova` | Épico | 3 | Daña a jugadores cercanos en un radio que sube con el nivel. |
+| **Vértigo del Vacío** | `nausea` | Poco común | 3 | Puede aplicar náuseas a un jugador golpeado. |
+| **Cólera del Vendaval** | `air_launch` | Raro | 3 | Puede lanzar a un atacante al aire. |
+| **Perdición del End** | `ender_slayer` | Común | 3 | Aumenta el daño de espada a endermen y al dragón del End. |
+| **Purga de la Luz** | `cleanse` | Raro | 1 | Puede eliminar efectos de poción negativos. |
+| **Legión de la Mecha** | `creeper_guard` | Legendario | 1 | Puede invocar un creeper guardián cuando un ataque te deja cerca de morir. |
+| **Bendición de la Lluvia** | `extinguish` | Común | 1 | Puede apagar al jugador si está en llamas. |
+| **Estela de Supernova** | `rocket_boost` | Raro | 3 | Puede aumentar el impulso de cohetes al planear con élitros. |
+| **Venganza de Salamandra** | `retaliation_fire` | Poco común | 3 | La armadura puede incendiar al atacante. |
+| **Cazador de Medianoche** | `night_hunter` | Poco común | 3 | Aumenta el daño de espada a criaturas durante la noche. |
+| **Espejo del Némesis** | `reflect` | Legendario | 3 | Puede cancelar el golpe y devolver daño aumentado al atacante. |
+| **Renacer del Fénix** | `revive` | Legendario | 3 | La armadura puede evitar un golpe letal y recuperar salud. |
+| **Alas del Vendaval** | `glide_boost` | Épico | 3 | Impulsa los élitros con clic derecho mientras planeas. |
+| **Sentencia Final** | `critical_finish` | Legendario | 1 | Puede infligir un golpe de remate a un objetivo con menos de 5 puntos de vida. |
+
+</details>
+
+Los encantamientos usan etiquetas persistentes del plugin. El catálogo toma como referencia la organización por niveles, equipo y eventos de [ExcellentEnchants](https://github.com/nulli0n/ExcellentEnchants-spigot).
+
+## Adquisición, libros y rarezas
+
+Mesa y bibliotecarios se activan por separado. Coloca estos ajustes en `plugins/UltimateItemsEditor/config.yml` y ejecuta `/ie rules reload`. Si el módulo de encantamientos estaba desactivado, actívalo y reinicia primero.
 
 ```yaml
-modules:
-  vanilla: true
-  custom-commands: true
-  custom-enchantments: false
+custom-enchant-acquisition:
+  table:
+    enabled: false
+    chance-percent: 20
+    rarity-weights: {common: 60, uncommon: 30, rare: 12, epic: 4, legendary: 1}
+  villagers:
+    enabled: false
+    chance-percent: 20
+    rarity-weights: {common: 45, uncommon: 27, rare: 15, epic: 7, legendary: 2}
+  inventory:
+    enabled: true
+    success-percent: 70
+    destruction-percent: 30
+    destruction-mode: enchantment
+  anvil:
+    enabled: true
+    base-level-cost: 3
 ```
 
-- **Vanilla** loads the appearance, properties and special-item editor tabs, templates and their style files.
-- **Custom Commands** loads the behavior editor, consumables, custom item skills and general or item-bound rules.
-  The existing `triggers.enabled`, `consumables.enabled` and `customitems.enabled` settings still apply.
-- **Custom Enchantments** loads the custom enchantment catalog and editor, enchant tags, enchant-bound rules and the
-  `custom-enchant` condition. Existing tagged items and enchant-bound rules can use the same IDs.
+### Mesa y bibliotecarios
 
-Saved items and the language settings are shared. You can still list, save and retrieve items with all three modules
-disabled. Module switches leave the existing data files in place.
+- **Mesa:** un encantamiento vanilla exitoso puede añadir un encantamiento custom compatible. El ítem conserva sus encantamientos vanilla y la mesa cobra el lapislázuli y la experiencia habituales. Las tres ofertas limitan el nivel custom a I, II o III respectivamente.
+- **Bibliotecarios:** al generar una nueva oferta de libro encantado, el plugin puede sustituirla por un libro custom y conserva los ingredientes, las existencias y la mecánica de precios de la oferta original. El nivel del aldeano limita el del libro. Desactivar la opción bloquea la compra de libros custom ya ofertados mientras la integración esté cargada. Los libros comprados siguen disponibles para aplicar.
 
-## Custom enchantments
+### Aplicar un libro
 
-Enable `modules.custom-enchantments`, restart, and open **/ie edit → Encantamientos custom → Catálogo de
-encantamientos**. Pick a compatible enchantment and level, or select an applied enchantment to remove it.
-For command-based application, use `/ie tag enchant <id> <level>`. Level `0` removes the tag.
+**Inventario:** abre tu inventario personal, toma el libro con el cursor y haz **clic derecho** sobre un único ítem compatible. Un libro incompatible o de nivel igual o inferior se conserva.
 
-| ID | Equipment | Effect |
-| --- | --- | --- |
-| `blood_pact` | Sword | Heals the attacker on melee hits |
-| `ember_edge` | Sword | Sets the target on fire on melee hits |
-| `iron_ward` | Chestplate | Reduces damage from attacks |
-| `swiftstep` | Boots | Grants speed while sprinting |
-| `miner_focus` | Pickaxe | Grants haste after breaking a block |
-| `fortune_xp` | Sword / pickaxe | Increases combat and mining XP up to 2× |
-| `necromancer` | Chestplate | Chance to summon a skeleton or zombie against an attacking mob |
-| `tunneler` | Pickaxe / shovel | Excavates suitable terrain in planes from 3×3 to 6×6 |
-| `veinminer` | Pickaxe | Follows connected blocks of the same ore family |
-| `multishot` | Bow / crossbow / trident | Adds up to four non-recoverable arrows to the shot |
-| `steel_guardians` | Chestplate | Chance to summon an iron golem against an attacking mob |
-| `end_arrow` | Bow / crossbow | Teleports to safe footing near the arrow impact |
-| `hare` | Boots | Grants Jump Boost I–III |
-| `magma_step` | Boots | Briefly hardens exposed source lava and magma into basalt |
-| `glass_shatter` | Pickaxe | Instantly breaks glass and glass panes |
-| `tree_feller` | Axe | Breaks connected logs or stems of the same type |
-| `auto_collect` | Mining tools / axe | Sends block drops to inventory, leaving overflow on the ground |
-
-Excavation shares a 24-candidate budget per tick across the server. It uses ordinary player block-break events,
-requires a suitable tool and skips unloaded chunks. Sneak to mine a single block. Vein mining and tree felling
-process at most 48 and 96 additional blocks respectively. Summons last 10 seconds and do not drop loot or XP.
-
-The version 3 catalog also adds 42 combat, fishing, farming and flight enchantments. See the names, activation
-events, default chances and level definitions in `custom-enchantments.yml`. Updating the plugin imports missing
-entries while preserving configured entries and their enabled state.
-
-- Explosive arrows and creeper guards deal entity damage without modifying blocks. Combat area damage is capped at
-  eight nearby targets per activation, and secondary damage does not start another chain of catalog combat effects.
-- Disarming moves one armor piece into the target's inventory when a free slot is available. It respects Curse of
-  Binding. Binding on death removes the enchanted equipped item when it procs.
-- **Siembra de la Aurora** uses an enchanted hoe on farmland while sneaking and consumes one carrot per new crop.
-  Each placement runs a Bukkit block-place event. **Forja del Sol** uses furnace recipes to smelt eligible block drops.
-- **Estela de Supernova** augments rocket use while gliding. **Alas del Vendaval** provides a cooldown-limited
-  right-click boost while gliding without a rocket.
-
-Definitions live in `custom-enchantments.yml`. Each can set `enabled`, applicable materials, slots, cooldown,
-trigger, conditions and consecutive levels (up to 16). Use `/ie rules reload` to reload the definitions.
-Invalid entries are isolated and reported in `/ie rules errors`. `triggers.enabled` controls whether effects run.
-
-This catalog uses UltimateItemsEditor item tags. Apply and inspect the enchantments using the editor or `/ie tag`;
-they have no vanilla enchanting table, anvil or book integration. The catalog design takes inspiration from the
-configurable levels, equipment restrictions and event-driven effects in
-[ExcellentEnchants](https://github.com/nulli0n/ExcellentEnchants-spigot).
-
-## Commands
-
-- `/ie edit` - Edit the item you are holding.
-- `/ie reopen` - Reopen the editor of the item you last edited.
-- `/ie save <iname>` - Save the item you are holding.
-- `/ie delete <iname>` - Delete a saved item.
-- `/ie get <iname>` - Give yourself a saved item.
-- `/ie give <player> <iname> <amount>` - Give X amount of an item to a player.
-- `/ie list` - View a list of saved items.
-- `/ie manage` - Open the saved items manager GUI: preview, get, give to a player, edit, apply a template and delete.
-- `/ie template` - Pick a template for the item in your hand. Subcommands: `apply [name]`, `reset`, `list`, `inspect`, `reload`.
-- `/ie language [name]` - Show or change the language used for template texts and messages.
-- `/ie rules` - Trigger rules: `list`, `info <id>`, `reload`, `errors`, `stats`.
-- `/ie tag` - Give the item in your hand a custom id or custom enchantment: `item <id|clear>`, `enchant <id> <level>`, `info`.
-- `/ie consumable` - Items that run console commands when clicked and are used up: `create`, `update`, `addcmd`, `delcmd`, `addaction`, `delaction`, `set`, `give`, `info`, `list`, `delete`, `reload`, `errors`.
-- `/ie customitem` (alias `citem`) - Items with skills: `create`, `update`, `give`, `info`, `list`, `delete`, `skill add|remove|action|condition|delaction|delcond|set`, `reload`, `errors`.
-
-## Permissions
-
-(A longer description will follow.)
-
-For now, simply give yourself the `ie.*` permission to be able to use all features.
-
-![Screenshot 1](https://i.imgur.com/S0VrUGA.png)
-![Screenshot 2](https://i.imgur.com/dWYsCQg.png)
-![Screenshot 3](https://i.imgur.com/emJwfTS.png)
-
-
-## Templates, languages, enchantment and attribute styles
-
-Everything is configurable in `plugins/UltimateItemsEditor/`:
-
-| File | Purpose |
+| Resultado | Qué ocurre |
 | --- | --- |
-| `config.yml` | language, default template, global hide flags, decimals, keep item lore |
-| `palettes.yml` (and `palettes/<name>.yml`) | the templates: name prefix, lore header/footer, tooltip flags, GUI icon |
-| `enchantsstyle/vanilla.yml` | line format, display name and order of every vanilla enchantment |
-| `enchantsstyle/custom.yml` | style for enchantments from other plugins (per namespace or per enchantment) |
-| `enchantsstyle/attributes.yml` | line format, icon and order of every attribute |
-| `messages/<language>.yml` | messages, enchantment/attribute names and `template-text.*` used by templates |
+| Éxito | Se aplica el encantamiento y se consume el libro. |
+| Destrucción en modo `enchantment` | Se destruye el libro y conservas el ítem con sus encantamientos anteriores. |
+| Destrucción en modo `item` | Se destruyen el libro y el ítem. |
+| Fallo sin destrucción | Conservas el libro y el ítem. Es el porcentaje que queda hasta 100. |
 
-Templates are available from the editor home screen (**Template**), from the saved item manager (per item and
-**Standardize all**) and with `/ie template`. A template keeps the item's own lore between its header and the
-generated enchantment/attribute lines, never stacks when applied again, and `reset` restores the item.
+Una sola tirada decide el resultado. Si éxito y destrucción suman más de 100, el plugin reduce la probabilidad efectiva de destrucción y lo registra en consola.
 
-Text formats: `&c`, `&#RRGGBB`, `<red>`, `<bold>`, `<#RRGGBB>`, `<gradient:#ff0000:#0000ff>..</gradient>`,
-`<rainbow>..</rainbow>`. Put `%lang:rarity-epic%` in a template and it follows the active language. To add a
-language, copy `messages/english.yml` to `messages/<yourlanguage>.yml`, translate it and run
-`/ie language <yourlanguage>`.
+**Yunque:** coloca el ítem a la izquierda y el libro a la derecha. Si el nivel mejora el ítem, el resultado consume el libro y cobra el coste base más `nivel - 1` y la penalización por trabajos previos. Pon `anvil.enabled: false` si quieres exigir la tirada del inventario a todos los libros custom.
 
-## Upgrading from ItemEditor
+### Rareza por encantamiento y nivel
 
-The plugin is now called **UltimateItemsEditor** (`UltimateItemsEditor-<version>.jar`). Commands are unchanged:
-`/ie` still works, together with `/uie`, `/itemeditor` and `/ultimateitemseditor`, and so does the `ie.*` permission.
+En `custom-enchantments.yml`, cada entrada define `rarity` y puede especificar valores distintos con `level-rarities`:
 
-1. Delete the old `ItemEditor-*.jar` from `plugins/`: both plugins would answer `/ie`.
-2. Start the server. `plugins/ItemEditor/` (your saved items) is moved to `plugins/UltimateItemsEditor/` automatically.
-   Items that already had a template keep working.
+```yaml
+# Dentro de una entrada de enchantments con esos niveles definidos
+rarity: rare
+level-rarities:
+  '2': epic
+  '3': legendary
+```
 
-## Performance notes
+Las rarezas válidas son `common`, `uncommon`, `rare`, `epic` y `legendary`. Los niveles sin valor propio heredan la rareza del encantamiento. Después de superar la probabilidad de adquisición, cada fuente sortea primero el encantamiento según su rareza y luego el nivel según su propio peso. Los pesos son relativos a las opciones elegibles y **0** excluye esa rareza de la fuente. La rareza se muestra en el editor y en los libros de nueva generación.
 
-- Saved items are kept in memory; saving and deleting write to disk on a background thread (and atomically, so a
-  crash cannot corrupt an item). That thread only exists while it has something to write.
-- Clicks and chat messages of players who are not using the plugin cost a single map lookup.
-- The saved item list, its icons and the language list are cached, so opening or paging menus does no disk access.
+## Rendimiento
 
-## Triggers, conditions and actions
+- Las reglas se indexan por evento e ID. El motor filtra por ranura y material antes de leer los metadatos y reutiliza etiquetas ya interpretadas.
+- Los efectos opcionales costosos, como explosiones, daño de área, invocaciones, proyectiles extra y cambios de terreno, comparten una cola y un presupuesto por tick. Los efectos pendientes pueden caducar bajo saturación. `/ie rules stats` muestra cuántos se descartaron.
+- Las reglas periódicas distribuyen los jugadores entre varios ticks del intervalo. La excavación tiene su propio presupuesto de **24 bloques candidatos por tick**. Omite chunks descargados y usa los eventos normales de rotura. Agáchate para minar un solo bloque.
+- La extracción de vetas tiene un límite de 48 bloques adicionales y la tala de 96. Las explosiones de flechas y creepers guardianes afectan a entidades. El daño de área está limitado a ocho objetivos cercanos y evita encadenar más efectos de combate del catálogo.
+- El gestor conserva los ítems guardados en memoria y escribe las operaciones de guardado y borrado en segundo plano.
 
-The base for custom items and custom enchantments. Rules live in `plugins/UltimateItemsEditor/rules/*.yml`
-(`examples.yml` has one of everything, all disabled). Example:
+| Opción en `enchantment-performance` | Predeterminado | Qué ajusta |
+| --- | --- | --- |
+| `work-per-tick` | `64` | Presupuesto ponderado de trabajo por tick. Acepta 32–256. |
+| `max-queued-effects` | `256` | Capacidad de la cola. Acepta 16–1024. |
+| `periodic-spread-ticks` | `8` | Ticks en los que se reparten las comprobaciones. Acepta 1–20, hasta el intervalo base. |
+
+Recarga con `/ie rules reload`. Los límites controlan el trabajo programado por el plugin. El impacto en MSPT depende del equipo, la población y los demás plugins.
+
+## Consumibles, habilidades y reglas
+
+### Consumibles
+
+En **Comportamiento → Consumibles** puedes elegir el clic de activación, la cantidad gastada y el cooldown, y añadir o eliminar condiciones y acciones. Puedes editar texto y comandos desde el chat. La entrada de comandos en la GUI se escribe sin la barra inicial.
+
+```text
+/ie consumable create recompensa
+/ie consumable addcmd recompensa say %player% ha usado una recompensa
+/ie consumable addaction recompensa title &6Recompensa
+/ie consumable addaction recompensa particle happy_villager
+/ie consumable set recompensa cooldown 2s
+/ie consumable give recompensa Steve 5
+```
+
+El consumible ejecuta sus comandos y luego sus acciones, en orden. Si una ejecución síncrona falla antes del primer comando despachado, devuelve el ítem. Si ya despachó un comando, el ítem permanece consumido para evitar repetir una recompensa. `/ie consumable info <id>` muestra los índices de las acciones y los comandos.
+
+### Ítems y habilidades
+
+En **Comportamiento → Ítems personalizados**, crea una definición y añade habilidades con activadores y cooldowns propios. Puedes añadir o quitar condiciones, comandos y efectos. Si quitas la última acción de una habilidad, queda desactivada hasta que añadas otra y vuelvas a habilitarla. El icono de cofre entrega una copia configurada.
+
+```text
+/ie customitem create espada_ardiente
+/ie customitem skill add espada_ardiente fuego ATTACK ignite 4s
+/ie customitem skill condition espada_ardiente fuego target-player false
+/ie customitem skill action espada_ardiente fuego actionbar &6Llama activada
+/ie customitem skill set espada_ardiente fuego cooldown 3s
+/ie customitem give espada_ardiente Steve 1
+```
+
+### Reglas y acciones
+
+Los archivos de `rules/` vinculan reglas a `item: <id>` o `enchant: <id>`. Una regla sin vínculo aplica de forma general. Usa `slots` para seleccionar el equipo que puede activarla y `materials` para filtrar el material antes de leer sus etiquetas.
 
 ```yaml
 rules:
-  fire_sword_ignite:
-    trigger: ATTACK          # what the player does
-    item: fire_sword         # only for items tagged with /ie tag item fire_sword
+  fuego_al_golpear:
+    trigger: ATTACK
+    item: espada_ardiente
+    slots: hand
     cooldown: 3s
-    conditions:              # all must be true (use any: / not: / all: to combine)
-      - target-player: false
-      - world: [world, world_nether]
-      - chance: 40
-    actions:                 # run in order
-      - ignite: 4s
-      - message: "&6Your sword sets %target% on fire!"
-```
-
-- **Triggers:** `INTERACT BLOCK_BREAK BLOCK_PLACE CONSUME DROP SHOOT_BOW ATTACK DEFEND KILL DEATH JOIN QUIT PERIODIC`.
-- **Items and enchantments:** `item: <id>` binds a rule to a custom item, `enchant: <id>` to a custom enchantment
-  (its level is `%level%`); `slots:` says where the item must be (hand, off_hand, head, chest, legs, feet, armor, any).
-  Omit both to make a rule for everybody. The data is stored in the item's persistent data, so it survives anything.
-- **Conditions:** world, click, slot, sneaking, sprinting, flying, gamemode, permission, chance, compare
-  (`"damage >= 5"`), item-material, item-id, custom-enchant, vanilla-enchant, item-name-contains, item-lore-contains,
-  block-type, target-type, target-player, time, cooldown, all, any, not.
-- **Actions:** message, title, actionbar, particle, command, sound, potion, damage, heal, feed, ignite, set-damage, cancel, set-cooldown, delay, if.
-  Durations are `5s`, `20t`, `2m`, `500ms`; a bare number is seconds.
-- **Safe by design:** a typo is reported with its exact place (`/ie rules errors`) and the other rules still load; events
-  another plugin already cancelled are skipped unless `run-when-cancelled: true`; a rule that keeps failing is
-  switched off after `triggers.max-rule-errors` errors; a rule that triggers itself is cut after 4 levels.
-- **Light by design:** with no rules there is no listener and no task. A listener exists only for the triggers your
-  rules use, rules are looked up by trigger and item/enchantment id (no scanning), and an event whose items carry no
-  custom data costs a single read.
-
-### Adding your own pieces from code
-
-```java
-TriggerEngine engine = ItemEditor.INSTANCE.getTriggerEngine();
-engine.registerCondition("has-mana", (config, pc) -> ctx -> manaOf(ctx.player) >= Cfg.number(config, pc));
-engine.registerAction("lightning", (config, pc) -> ctx -> ctx.player.getWorld().strikeLightning(ctx.location()));
-engine.load(); // rules can now use `has-mana: 20` and `lightning: true`
-```
-
-A future custom enchantment is then just data: a rule bound with `enchant: <id>`, plus `/ie tag enchant <id> <level>`
-(or `ItemTags` from code) to put it on an item.
-
-## Editing item behavior in the GUI
-
-Open `/ie edit` with an item, or open the saved item editor, and select **Comportamiento**. Choose **Ítems
-personalizados** or **Consumibles**. You can edit an existing definition or create one from a copy of the item
-currently being edited. Definition changes save immediately.
-
-- For a custom item, create a skill by choosing its trigger and first action. Each skill has its own action list,
-  conditions and cooldown. Removing its final action leaves it disabled. Add an action and re-enable the skill to
-  use it again.
-- For a consumable, change the activation click, amount consumed, cooldown, commands, conditions and feedback.
-- Open a list and use **Añadir**, or click an existing entry to delete it. Pick common sounds, particles and
-  cooldowns directly in the GUI. Enter text values in chat. Enter command text without its leading slash.
-- Use the chest button to receive a copy of the configured item.
-
-## Feedback for item actions
-
-Use `message` for chat, `title` for the center of the screen, and `actionbar` for the text above the hotbar. Text supports
-Minecraft colors and placeholders such as `%player%`. Use `sound` for Minecraft sound keys and `particle` for effects
-such as `flame`, `heart` and `happy_villager`. Particles that require extra data, such as `dust` and `item`, are not
-supported by this action.
-
-Add these entries to `actions:` in a consumable, custom item skill or trigger rule:
-
-```yaml
-actions:
-  - message: "&a%player%, reward granted!"
-  - title: {text: "&6Reward", subtitle: "&fYou unlocked a bonus", fade-in: 10t, stay: 2s, fade-out: 10t}
-  - actionbar: "&eBonus activated"
-  - sound: {sound: entity.player.levelup, volume: 1, pitch: 1}
-  - particle: {particle: happy_villager, count: 12, spread: 0.35, height: 1, speed: 0}
-```
-
-`target: self` is the default. On skills and rules with another entity involved, `target: target` addresses that entity.
-Chat, titles and the action bar are sent to players. Sounds and particles originate at the selected entity.
-A particle action emits at most 128 particles in one call. Use a cooldown or a suitable interval on frequent triggers.
-
-## Consumable items
-
-An item that, when clicked, runs console commands and is used up (vouchers, keys, ranks, money pouches...).
-
-```
-/ie consumable create vip_key                      (with the item in your hand: name, lore, texture... are copied)
-/ie consumable create vip_key from my_saved_item   (or from a saved item)
-/ie consumable addcmd vip_key lp user %player% parent add vip
-/ie consumable addcmd vip_key eco give %player% 5000
-/ie consumable addaction vip_key message &aReward granted to %player%!
-/ie consumable addaction vip_key title &6VIP unlocked
-/ie consumable addaction vip_key actionbar &eBonus activated
-/ie consumable addaction vip_key sound entity.player.levelup
-/ie consumable addaction vip_key particle happy_villager
-/ie consumable set vip_key cooldown 2s             (also: click, amount, run-when-cancelled)
-/ie consumable give vip_key Steve 5
-```
-
-Use `/ie consumable info vip_key` to see the action numbers and `/ie consumable delaction vip_key <number>` to remove
-one. Consumables run their `commands:` first, then their `actions:` in order. If dispatching a command throws or the
-server cannot find it, later feedback actions are skipped.
-
-Each one is a file, `plugins/UltimateItemsEditor/consumables/<id>.yml`. Besides what the commands write you can add
-`conditions:` and `actions:` by hand, with the same syntax as trigger rules (message, sound, potion, if, delay...):
-
-```yaml
-click: right            # left, right, any, left-air, left-block, right-air, right-block
-amount: 1               # items taken per use
-cooldown: 1s            # per player; stops holding the click from burning a whole stack
-run-when-cancelled: false
-commands:
-- lp user %player% parent add vip
-conditions:
-- world: [world, survival]
-actions:
-- message: "&aYou are now VIP, %player%!"
-- sound: "entity.player.levelup"
-```
-
-Placeholders: `%player% %world% %x% %y% %z% %item% (the consumable id)`. Run `/ie consumable reload` after editing a file.
-
-- **Failed commands:** the item is returned if a synchronous action fails before a command has been dispatched.
-  If a command already ran, the item stays consumed to avoid granting its reward again. The server logs the error.
-- **Clicks:** when the click and conditions match, the consumable takes over the interaction.
-- **Updating:** `/ie consumable update <id>` replaces the item; items given before keep working.
-- **Light on the server:** no consumables means no listener. With some, there is one listener that discards a click with a
-  single material lookup, before it reads anything from the item; only items of a consumable material have their mark read.
-
-## The editor menu
-
-`/ie edit` opens a menu organized in tabs:
-
-```
-[item]  [Appearance] [Properties] [Special items]  ...  [info]    the item (click = finish), tabs, item summary
-=========================================================         a colored rail: the accent of the open tab
- the options of the open tab, 27 per page
-[cancel]              [<] [page] [>]                [finish]
-```
-
-- Every option the editor has always had is still there: **Appearance** (name, lore, flags, templates), **Properties**
-  (enchantments, attributes, durability, unbreakable) and **Special items** (potions, books, heads, leather armor).
-- The menu remembers the tab and page: going back from a submenu returns to where you were.
-- Texts follow `/ie language`; the click sound can be switched off with `gui.click-sounds: false` in `config.yml`.
-
-### Adding your own option or tab
-
-```java
-EditorMenu menu = ItemEditor.INSTANCE.getEditorMenu();
-
-// an option in an existing tab (order 10, 20, 30...: use 15 to go between the first two)
-menu.registerOption("properties", "my_option", 50, MyOptionUiItem::new);   // (screen, player) -> a UiItem
-
-// a new tab: category first, then its options
-menu.registerCategory(new EditorCategory("custom", "Custom", "My own things",
-        Material.NETHER_STAR, Material.GREEN_STAINED_GLASS_PANE, 40));
-menu.registerOption("custom", "my_option", 10, MyOptionUiItem::new);
-```
-
-A tab with more than 27 options gets pages; with more than 7 tabs the last tab becomes a "more" button.
-To translate a tab, add `gui-cat-<id>` and `gui-cat-<id>-desc` to the language files. Menus with their own pages use
-`PageBar` (`ui/design`) so the controls look the same everywhere.
-
-## Custom items with skills
-
-An item can carry **skills**: triggers, conditions and actions that belong to the item (an active ability on right click,
-an effect when it hits, a passive bonus while worn...). They run on the trigger engine, so they are indexed, error-isolated
-and free when the item is not involved.
-
-```
-/ie customitem create fire_sword                         (the item in your hand: name, lore, texture... are copied)
-/ie customitem skill add fire_sword ignite ATTACK ignite 4s
-/ie customitem skill condition fire_sword ignite target-player false
-/ie customitem skill action fire_sword ignite message &6Burn %target%!
-/ie customitem skill action fire_sword ignite actionbar &cFlame Touch
-/ie customitem skill action fire_sword ignite particle flame
-/ie customitem skill set fire_sword ignite cooldown 3s
-/ie customitem skill set fire_sword ignite cooldown-message &cWait %cooldown%s
-/ie customitem give fire_sword Steve 2
-```
-
-Each item is a file, `plugins/UltimateItemsEditor/customitems/<id>.yml`; the commands edit it and refuse (saving nothing) any
-change that would not compile. Edit it by hand for anything bigger, then `/ie customitem reload`:
-
-```yaml
-skills:
-  ignite:                     # the skill id
-    name: Flame Touch         # optional, for /ie customitem info
-    trigger: ATTACK           # INTERACT, ATTACK, DEFEND, BLOCK_BREAK, KILL, PERIODIC...
-    slots: [hand]             # where the item must be: hand, off_hand, head, chest, legs, feet, armor, any
-    cooldown: 3s
-    cooldown-message: "&cWait %cooldown%s"
     conditions:
       - target-player: false
       - chance: 40
     actions:
       - ignite: 4s
-      - message: "&6Burn %target%!"
-  warmth:                     # a passive skill: every 2 seconds while the item is worn on the feet
-    trigger: PERIODIC
-    slots: feet
-    interval: 2s
-    actions:
-      - potion: { effect: speed, duration: 4s, amplifier: 0 }
+      - actionbar: "&6Arde %target%"
+      - sound: {sound: entity.blaze.shoot, volume: 1, pitch: 1}
+      - particle: {particle: flame, count: 10}
 ```
 
-Skills use the same triggers, conditions and actions as trigger rules (their ids are `<item>.<skill>`, so they show in
-`/ie rules list`). Copies already given only carry the item's id: editing a skill changes every copy, `update` replaces the item
-without touching the copies, and deleting the item turns them into ordinary items. A skill with an error is skipped and
-reported with its exact place (`/ie customitem errors`); the item and its other skills keep working.
+- **Eventos:** `INTERACT`, `BLOCK_BREAK`, `BLOCK_DAMAGE`, `BLOCK_PLACE`, `FISH_HOOK`, `ITEM_WEAR`, `CONSUME`, `DROP`, `SHOOT_BOW`, `THROW_TRIDENT`, `ATTACK`, `DEFEND`, `INJURY`, `FLIGHT_USE`, `KILL`, `DEATH`, `JOIN`, `QUIT` y `PERIODIC`.
+- **Condiciones:** mundo, clic, ranura, estado del jugador, permiso, probabilidad, comparación de valores, datos del ítem y tipo de objetivo. Combina condiciones con `all`, `any` y `not`. Consulta los [ejemplos de reglas](src/main/resources/rules/examples.yml).
+- **Acciones:** `message` para chat, `title` para título y subtítulo, `actionbar` para la barra rápida, `sound`, `particle`, `command`, `potion`, `damage`, `heal`, `feed`, `ignite`, `set-damage`, `cancel`, `set-cooldown`, `delay` e `if`. `target: self` actúa sobre el jugador y `target: target` sobre el objetivo del evento, si existe.
+- **Duraciones y textos:** `5s`, `20t`, `2m` o `500ms`. Un número sin unidad representa segundos. Los textos y comandos admiten placeholders como `%player%`, `%target%`, `%level%` y `%cooldown%`.
+- **Diagnóstico:** `/ie rules errors` muestra reglas inválidas. Las reglas con errores repetidos se desactivan según `triggers.max-rule-errors`. Por defecto, las reglas omiten los eventos que otros plugins cancelaron.
 
-**Fast by design:** a skill only accepts the materials its item has (and has ever had), and when every item-bound rule of a
-trigger lists its materials, the engine skips items of any other material without reading their data, also when it looks
-at armor slots. (A rule bound to an item without `materials:` in `rules/*.yml` turns that shortcut off for its trigger.)
+## Comandos y permisos
 
+El permiso administrativo es **`ie.*`**. `/ie`, `/uie` y `/itemeditor` son alias de `/ultimateitemseditor`.
+
+| Comando | Función |
+| --- | --- |
+| `/ie edit`, `/ie reopen` | Abrir el editor o reabrir el último ítem. |
+| `/ie save <nombre>`, `/ie get <nombre>`, `/ie delete <nombre>` | Guardar, obtener o borrar una entrada. |
+| `/ie give <jugador> <ítem> <cantidad>` | Entregar un ítem guardado. |
+| `/ie manage`, `/ie list [plain]` | Abrir el gestor o listar los ítems guardados. |
+| `/ie template [apply\|reset\|list\|inspect\|reload]` | Configurar plantillas para el ítem o consultar las disponibles. |
+| `/ie language [idioma]` | Consultar o cambiar el idioma. |
+| `/ie rules <list\|info\|reload\|errors\|stats>` | Gestionar reglas, recargar la configuración y consultar el rendimiento. |
+| `/ie tag <item\|enchant\|info>` | Etiquetar o inspeccionar el ítem sostenido. |
+| `/ie consumable <subcomando>` | Crear, editar, entregar o administrar consumibles. |
+| `/ie customitem <subcomando>` | Crear, editar, entregar o administrar ítems con habilidades. También `/ie citem`. |
+
+## Archivos y estilos
+
+Las rutas de esta tabla son relativas a `plugins/UltimateItemsEditor/`.
+
+| Ruta | Contenido |
+| --- | --- |
+| `config.yml` | Módulos, idioma, plantillas, adquisición y rendimiento. |
+| `custom-enchantments.yml` | Catálogo, rarezas, niveles y efectos. |
+| `rules/*.yml` | Reglas adicionales para eventos. |
+| `consumables/<id>.yml`, `customitems/<id>.yml` | Definiciones de consumibles e ítems con habilidades. |
+| `items/` | Ítems guardados desde el editor y los comandos. |
+| `palettes.yml`, `palettes/*.yml` | Plantillas, prefijos, encabezados, pies de lore e iconos. |
+| `enchantsstyle/vanilla.yml`, `enchantsstyle/custom.yml`, `enchantsstyle/attributes.yml` | Formatos y orden de encantamientos y atributos. |
+| `messages/<idioma>.yml` | Mensajes y textos de plantillas. |
+
+Las plantillas pueden conservar el lore original según `keep-item-lore`. Volver a aplicar una plantilla reemplaza sus líneas generadas. `/ie template reset` recupera el estilo original almacenado. Los formatos incluyen `&c`, `&#RRGGBB`, `<bold>`, gradientes y arcoíris. Para añadir un idioma, copia un archivo de `messages/`, tradúcelo y selecciónalo con `/ie language <idioma>`.
+
+## Compilación y extensiones
+
+Abre `pom.xml` en IntelliJ IDEA como proyecto Maven y selecciona **JDK 21**. Con Maven 3.9, ejecuta:
+
+```sh
+mvn clean package
+```
+
+El JAR se genera en `target/UltimateItemsEditor-2.1.0.jar`.
+
+- **Editor:** `ItemEditor.INSTANCE.getEditorMenu()` permite registrar categorías con `registerCategory` y botones con `registerOption`. Para traducir una pestaña, usa `gui-cat-<id>` y `gui-cat-<id>-desc` en los mensajes. Los submenús pueden reutilizar `PageBar`.
+- **Reglas:** con un módulo de reglas activo, `ItemEditor.INSTANCE.getTriggerEngine()` expone `registerCondition` y `registerAction`. Registra las extensiones antes de recargar las definiciones para que puedan compilarlas.

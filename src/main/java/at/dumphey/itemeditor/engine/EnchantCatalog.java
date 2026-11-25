@@ -24,28 +24,43 @@ public final class EnchantCatalog {
 
     private final TriggerEngine engine;
     private final CatalogMining mining;
+    private final CatalogWorkQueue work;
     private final CatalogEffects effects;
     private final CatalogCombat combat;
+    private final VanillaEnchantAcquisition acquisition;
     private final Map<String, Entry> entries = new LinkedHashMap<>();
 
     EnchantCatalog(TriggerEngine engine) {
         this.engine = engine;
+        this.work = new CatalogWorkQueue(engine.plugin());
         this.mining = new CatalogMining(engine);
-        this.effects = new CatalogEffects(engine);
-        this.combat = new CatalogCombat(engine, effects);
+        this.effects = new CatalogEffects(engine, work);
+        this.combat = new CatalogCombat(engine, effects, work);
+        this.acquisition = new VanillaEnchantAcquisition(engine, this);
     }
 
     boolean isSecondaryDamage() {
         return combat.isSecondaryDamage();
     }
 
+    public long discardedWork() {
+        return work.discarded();
+    }
+
+    void startAcquisition() {
+        acquisition.start();
+    }
+
     void stop() {
+        acquisition.stop();
+        work.stop();
         mining.stop();
         effects.stop();
         combat.stop();
     }
 
     List<Rule> load() {
+        work.loadLimits();
         final File file = new File(engine.plugin().getDataFolder(), RESOURCE);
         final YamlConfiguration yaml = new YamlConfiguration();
         try {
@@ -64,7 +79,7 @@ public final class EnchantCatalog {
 
     private void upgrade(File file, YamlConfiguration yaml) {
         final ConfigurationSection userEntries = yaml.getConfigurationSection("enchantments");
-        if (yaml.getInt("catalog-version") >= 3 || userEntries == null) {
+        if (yaml.getInt("catalog-version") >= 4 || userEntries == null) {
             return;
         }
         final YamlConfiguration bundled = new YamlConfiguration();
@@ -76,12 +91,28 @@ public final class EnchantCatalog {
                 bundled.load(reader);
             }
             final ConfigurationSection defaults = bundled.getConfigurationSection("enchantments");
+            final boolean missingEntries = yaml.getInt("catalog-version") < 3;
             for (String id : defaults.getKeys(false)) {
                 if (!userEntries.contains(id)) {
-                    userEntries.set(id, Cfg.plain(defaults.get(id)));
+                    if (missingEntries) userEntries.set(id, Cfg.plain(defaults.get(id)));
+                    continue;
+                }
+                final ConfigurationSection configured = userEntries.getConfigurationSection(id);
+                final ConfigurationSection original = defaults.getConfigurationSection(id);
+                if (configured == null || original == null) continue;
+                if (!configured.contains("rarity")) configured.set("rarity", original.get("rarity"));
+                if (!configured.contains("level-rarities")) {
+                    final ConfigurationSection configuredLevels = configured.getConfigurationSection("levels");
+                    final ConfigurationSection defaultLevels = original.getConfigurationSection("level-rarities");
+                    if (configuredLevels == null || defaultLevels == null) continue;
+                    final Map<String, Object> applicable = new LinkedHashMap<>();
+                    for (String level : defaultLevels.getKeys(false)) {
+                        if (configuredLevels.contains(level)) applicable.put(level, defaultLevels.get(level));
+                    }
+                    if (!applicable.isEmpty()) configured.set("level-rarities", applicable);
                 }
             }
-            yaml.set("catalog-version", 3);
+            yaml.set("catalog-version", 4);
             final Map<String, Object> raw = Cfg.map(Cfg.plain(yaml));
             DefinitionFiles.write(file, raw);
         } catch (Exception ex) {
@@ -111,6 +142,14 @@ public final class EnchantCatalog {
 
                 final String name = String.valueOf(map.getOrDefault("name", id));
                 final Map<String, Object> levels = Cfg.map(map.remove("levels"));
+                final Object rarityValue = map.remove("rarity");
+                final EnchantRarity rarity = rarityValue == null ? EnchantRarity.COMMON
+                        : EnchantRarity.parse(rarityValue, pc.child("rarity"));
+                final Object levelRarityValue = map.remove("level-rarities");
+                final Map<String, Object> levelRarities = Cfg.map(levelRarityValue);
+                if (levelRarityValue != null && levelRarities == null) {
+                    throw pc.child("level-rarities").error("expected a level-to-rarity map");
+                }
                 map.remove("name");
                 final Object alternate = map.remove("alternate-trigger");
                 if (levels == null || levels.isEmpty() || levels.size() > MAX_LEVEL) {
@@ -122,11 +161,22 @@ public final class EnchantCatalog {
                 }
 
                 final RuleAction[] actions = new RuleAction[levels.size() + 1];
+                final EnchantRarity[] rarityByLevel = new EnchantRarity[actions.length];
+                if (levelRarities != null) {
+                    for (String level : levelRarities.keySet()) {
+                        if (!levels.containsKey(level)) {
+                            throw pc.child("level-rarities").child(level).error("level is not defined");
+                        }
+                    }
+                }
                 map.put("enchant", id);
                 map.put("actions", levels.get("1"));
                 final Rule base = RuleLoader.compile(engine, "catalog." + id, RESOURCE, map);
                 for (int level = 1; level < actions.length; level++) {
                     final ParseContext levelContext = pc.child("levels").child(String.valueOf(level));
+                    final Object tier = levelRarities == null ? null : levelRarities.get(String.valueOf(level));
+                    rarityByLevel[level] = tier == null ? rarity
+                            : EnchantRarity.parse(tier, pc.child("level-rarities").child(String.valueOf(level)));
                     final RuleAction[] compiled = level == 1 ? base.actions()
                             : Actions.parseAll(levels.get(String.valueOf(level)), levelContext);
                     if (compiled.length == 0) {
@@ -140,7 +190,7 @@ public final class EnchantCatalog {
                     alternateRule = RuleLoader.compile(engine, "catalog." + id + ".alternate", RESOURCE, map)
                             .withLevelActions(actions);
                 }
-                entries.put(id, new Entry(id, name, levels.size(), base));
+                entries.put(id, new Entry(id, name, rarity, rarityByLevel, base));
                 rules.add(base.withLevelActions(actions));
                 if (alternateRule != null) {
                     rules.add(alternateRule);
@@ -163,13 +213,15 @@ public final class EnchantCatalog {
     public static final class Entry {
         private final String id;
         private final String name;
-        private final int maxLevel;
+        private final EnchantRarity rarity;
+        private final EnchantRarity[] rarityByLevel;
         private final Rule rule;
 
-        Entry(String id, String name, int maxLevel, Rule rule) {
+        Entry(String id, String name, EnchantRarity rarity, EnchantRarity[] rarityByLevel, Rule rule) {
             this.id = id;
             this.name = name;
-            this.maxLevel = maxLevel;
+            this.rarity = rarity;
+            this.rarityByLevel = rarityByLevel;
             this.rule = rule;
         }
 
@@ -182,7 +234,27 @@ public final class EnchantCatalog {
         }
 
         public int maxLevel() {
-            return maxLevel;
+            return rarityByLevel.length - 1;
+        }
+
+        EnchantRarity rarity() {
+            return rarity;
+        }
+
+        EnchantRarity rarity(int level) {
+            return rarityByLevel[level];
+        }
+
+        public String rarityKey() {
+            return rarity.key();
+        }
+
+        public String rarityKey(int level) {
+            return rarity(level).key();
+        }
+
+        java.util.Set<Material> materials() {
+            return rule.getMaterials();
         }
 
         public boolean accepts(Material material) {

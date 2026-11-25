@@ -17,6 +17,7 @@ import org.bukkit.entity.Entity;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Cancellable;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.HandlerList;
@@ -57,6 +58,7 @@ final class CatalogCombat implements Listener {
     };
 
     private final TriggerEngine engine;
+    private final CatalogWorkQueue work;
     private final CatalogEffects effects;
     private final NamespacedKey arrowKey;
     private final NamespacedKey arrowExpiry;
@@ -65,8 +67,9 @@ final class CatalogCombat implements Listener {
     private int pendingBleeds;
     private long generation;
 
-    CatalogCombat(TriggerEngine engine, CatalogEffects effects) {
+    CatalogCombat(TriggerEngine engine, CatalogEffects effects, CatalogWorkQueue work) {
         this.engine = engine;
+        this.work = work;
         this.effects = effects;
         arrowKey = new NamespacedKey(engine.plugin(), "catalog_arrow_effects");
         arrowExpiry = new NamespacedKey(engine.plugin(), "catalog_arrow_expiry");
@@ -179,8 +182,16 @@ final class CatalogCombat implements Listener {
                 break;
             case MOB_NOVA:
             case PLAYER_NOVA:
-                if (target != null) area(player, target, target.getLocation(), 1.5 + level * 0.65,
-                        1.0 + level * 0.65, effect == Effect.PLAYER_NOVA);
+                if (target != null && ctx.event instanceof Cancellable) {
+                    final Location center = target.getLocation();
+                    final Cancellable attack = (Cancellable) ctx.event;
+                    work.offer(CatalogWorkQueue.AREA, () -> {
+                        if (!attack.isCancelled() && inLoadedWorld(player, center)) {
+                            area(player, target, center, 1.5 + level * 0.65,
+                                    1.0 + level * 0.65, effect == Effect.PLAYER_NOVA);
+                        }
+                    });
+                }
                 break;
             case SWORD_WARD:
                 if (enemySword(ctx)) ctx.setDamage(ctx.getDamage() * (1 - 0.02 * level));
@@ -205,7 +216,9 @@ final class CatalogCombat implements Listener {
                 }
                 break;
             case CREEPER:
-                if (target instanceof Mob) effects.guard(player, target);
+                if (target instanceof Mob && ctx.event instanceof Cancellable) {
+                    effects.guard(player, target, (Cancellable) ctx.event);
+                }
                 break;
             case EXTINGUISH: player.setFireTicks(0); break;
             case ROCKET: boost(ctx, 0.25 + 0.12 * level, false); break;
@@ -292,15 +305,20 @@ final class CatalogCombat implements Listener {
     public void onArrowHit(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Arrow) || !(event.getEntity().getShooter() instanceof Player)) return;
         final Arrow arrow = (Arrow) event.getEntity();
-        if ((arrowMask(arrow) & EXPLOSIVE) == 0) return;
+        final int mask = arrowMask(arrow);
+        if ((mask & EXPLOSIVE) == 0) return;
         final PersistentDataContainer data = arrow.getPersistentDataContainer();
-        data.set(arrowKey, PersistentDataType.INTEGER, arrowMask(arrow) & ~EXPLOSIVE);
+        if (mask == EXPLOSIVE) {
+            data.remove(arrowKey);
+            data.remove(arrowExpiry);
+        } else {
+            data.set(arrowKey, PersistentDataType.INTEGER, mask & ~EXPLOSIVE);
+        }
         final Player player = (Player) arrow.getShooter();
         final Location location = arrow.getLocation();
         final Entity direct = event.getHitEntity();
-        later(1, () -> {
-            if (!player.isOnline() || player.getWorld() != location.getWorld()
-                    || !location.getWorld().isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4)) return;
+        work.offer(CatalogWorkQueue.AREA, () -> {
+            if (!inLoadedWorld(player, location)) return;
             location.getWorld().spawnParticle(Particle.EXPLOSION, location, 1);
             location.getWorld().playSound(location, Sound.ENTITY_GENERIC_EXPLODE, 0.8f, 1.1f);
             area(player, direct, location, 2.8, 4.0, null);
@@ -320,13 +338,19 @@ final class CatalogCombat implements Listener {
         entity.addPotionEffect(new PotionEffect(type, ticks, 0));
     }
 
+    private static boolean inLoadedWorld(Player player, Location location) {
+        return player.isOnline() && player.getWorld() == location.getWorld()
+                && location.getWorld().isChunkLoaded(location.getBlockX() >> 4, location.getBlockZ() >> 4);
+    }
+
     private void area(Player player, Entity direct, Location center, double radius, double damage, Boolean players) {
         int remaining = MAX_AREA_TARGETS;
         final double square = radius * radius;
-        for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius)) {
-            if (entity == player || entity == direct || !(entity instanceof LivingEntity)) continue;
-            if (players != null && (players ? !(entity instanceof Player) : !(entity instanceof Mob))) continue;
-            if (entity.getLocation().distanceSquared(center) > square) continue;
+        final Location position = center.clone();
+        for (Entity entity : center.getWorld().getNearbyEntities(center, radius, radius, radius,
+                candidate -> candidate != player && candidate != direct && candidate instanceof LivingEntity
+                        && (players == null || (players ? candidate instanceof Player : candidate instanceof Mob)))) {
+            if (entity.getLocation(position).distanceSquared(center) > square) continue;
             hit(player, (LivingEntity) entity, damage);
             if (--remaining == 0) return;
         }
@@ -350,8 +374,12 @@ final class CatalogCombat implements Listener {
             later(pulse * 20, () -> {
                 if (last) pendingBleeds--;
                 if (player.isOnline() && target.isValid() && player.getWorld() == target.getWorld()) {
-                    target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, target.getLocation().add(0, 0.8, 0), 2);
-                    hit(player, target, 0.7 + 0.4 * level);
+                    work.offer(CatalogWorkQueue.HIT, () -> {
+                        if (player.isOnline() && target.isValid() && player.getWorld() == target.getWorld()) {
+                            target.getWorld().spawnParticle(Particle.DAMAGE_INDICATOR, target.getLocation().add(0, 0.8, 0), 2);
+                            hit(player, target, 0.7 + 0.4 * level);
+                        }
+                    });
                 }
             });
         }
@@ -464,8 +492,9 @@ final class CatalogCombat implements Listener {
         final Block root = ctx.block;
         final Player player = ctx.player;
         final EquipmentSlot hand = ctx.slot;
-        ctx.cancel();
-        later(1, () -> plantArea(root, player, hand));
+        if (work.offer(CatalogWorkQueue.WORLD_EDIT, () -> plantArea(root, player, hand))) {
+            ctx.cancel();
+        }
     }
 
     private void plantArea(Block root, Player player, EquipmentSlot slot) {

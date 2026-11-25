@@ -71,6 +71,10 @@ public class RuleCommands {
                         "%evaluated%", String.valueOf(engine.getRulesEvaluated()), "%fired%", String.valueOf(engine.getRulesFired()),
                         "%errors%", String.valueOf(engine.getRuleErrors()), "%listeners%", String.valueOf(engine.getListenerCount()),
                         "%periodic%", String.valueOf(engine.isPeriodicRunning())));
+                if (engine.enchantCatalog() != null) {
+                    sender.sendMessage(lang.prefixed("catalog-performance-stats", "%discarded%",
+                            Long.toString(engine.enchantCatalog().discardedWork())));
+                }
                 break;
             default:
                 sender.sendMessage(lang.prefixed("rules-usage"));

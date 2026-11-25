@@ -40,6 +40,41 @@ triggers:
   # A rule that throws this many errors is switched off until /ie rules reload.
   max-rule-errors: 5
 
+# Optional ways to obtain catalog enchantments through native Minecraft interfaces.
+# Requires modules.custom-enchantments and triggers.enabled. Reload with /ie rules reload.
+custom-enchant-acquisition:
+  table:
+    enabled: false
+    # Chance per successful vanilla enchant. Higher table offers allow higher custom levels.
+    chance-percent: 20
+    # Draw one enchantment, then one eligible level, using these weights for both draws.
+    rarity-weights: {common: 60, uncommon: 30, rare: 12, epic: 4, legendary: 1}
+  villagers:
+    enabled: false
+    # Chance to replace a newly generated librarian enchanted-book offer.
+    chance-percent: 20
+    rarity-weights: {common: 45, uncommon: 27, rare: 15, epic: 7, legendary: 2}
+  inventory:
+    enabled: true
+    success-percent: 70
+    destruction-percent: 30
+    # enchantment consumes the book only; item consumes the book and destroys the target.
+    destruction-mode: enchantment
+  anvil:
+    # Turn off to require the inventory application odds for all catalog books.
+    enabled: true
+    # Book application: this base cost + (book level - 1) + prior work penalty.
+    base-level-cost: 3
+
+# Performance limits shared by the custom enchantment catalog.
+enchantment-performance:
+  # Weighted units per tick for area effects, summons, volleys and terrain edits (32–256).
+  work-per-tick: 64
+  # Optional effects wait in a bounded queue and expire after ten ticks of backlog (16–1024).
+  max-queued-effects: 256
+  # Spread periodic player checks across this many ticks of each trigger interval (1–20).
+  periodic-spread-ticks: 8
+
 # Consumable items: items that run console commands when clicked and are used up (/ie consumable).
 # Each one is a file in plugins/UltimateItemsEditor/consumables/. With none, no listener is registered.
 consumables:

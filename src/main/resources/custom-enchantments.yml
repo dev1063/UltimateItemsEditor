@@ -2,10 +2,12 @@
 # Changes to this file can then be applied with /ie rules reload.
 # Each entry uses the same triggers, conditions and actions as rules.
 # Use consecutive levels starting at 1 (up to 16). Materials are required.
-catalog-version: 3
+catalog-version: 4
 enchantments:
   blood_pact:
     name: "Pacto de sangre"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: &swords [WOODEN_SWORD, STONE_SWORD, IRON_SWORD, GOLDEN_SWORD, DIAMOND_SWORD, NETHERITE_SWORD]
@@ -20,6 +22,8 @@ enchantments:
 
   ember_edge:
     name: "Filo de brasas"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -34,6 +38,8 @@ enchantments:
 
   iron_ward:
     name: "Guardia férrea"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: DEFEND
     slots: chest
     materials: [LEATHER_CHESTPLATE, CHAINMAIL_CHESTPLATE, IRON_CHESTPLATE, GOLDEN_CHESTPLATE, DIAMOND_CHESTPLATE, NETHERITE_CHESTPLATE]
@@ -47,6 +53,8 @@ enchantments:
 
   swiftstep:
     name: "Paso veloz"
+    rarity: rare
+    level-rarities: {'2': epic}
     trigger: PERIODIC
     slots: feet
     materials: [LEATHER_BOOTS, CHAINMAIL_BOOTS, IRON_BOOTS, GOLDEN_BOOTS, DIAMOND_BOOTS, NETHERITE_BOOTS]
@@ -59,6 +67,8 @@ enchantments:
 
   miner_focus:
     name: "Enfoque minero"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: BLOCK_BREAK
     slots: hand
     materials: [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE]
@@ -70,6 +80,8 @@ enchantments:
 
   fortune_xp:
     name: "Fortuna de la experiencia"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: BLOCK_BREAK
     alternate-trigger: KILL
     slots: hand
@@ -81,6 +93,7 @@ enchantments:
 
   necromancer:
     name: "Pacto del nigromante"
+    rarity: epic
     trigger: DEFEND
     slots: chest
     materials: &chestplates [LEATHER_CHESTPLATE, CHAINMAIL_CHESTPLATE, IRON_CHESTPLATE, GOLDEN_CHESTPLATE, DIAMOND_CHESTPLATE, NETHERITE_CHESTPLATE]
@@ -91,6 +104,8 @@ enchantments:
 
   tunneler:
     name: "Quebramontañas"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary, '4': legendary}
     trigger: BLOCK_BREAK
     slots: hand
     materials: &digging [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE, WOODEN_SHOVEL, STONE_SHOVEL, IRON_SHOVEL, GOLDEN_SHOVEL, DIAMOND_SHOVEL, NETHERITE_SHOVEL]
@@ -102,6 +117,8 @@ enchantments:
 
   veinminer:
     name: "Pulso de la veta"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary, '4': legendary}
     trigger: BLOCK_BREAK
     slots: hand
     materials: &pickaxes [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE]
@@ -113,6 +130,8 @@ enchantments:
 
   multishot:
     name: "Lluvia de filos"
+    rarity: legendary
+    level-rarities: {'2': legendary, '3': legendary, '4': legendary}
     trigger: SHOOT_BOW
     alternate-trigger: THROW_TRIDENT
     slots: hands
@@ -126,6 +145,7 @@ enchantments:
 
   steel_guardians:
     name: "Centinelas de acero"
+    rarity: legendary
     trigger: DEFEND
     slots: chest
     materials: *chestplates
@@ -136,6 +156,7 @@ enchantments:
 
   end_arrow:
     name: "Flecha del vacío"
+    rarity: epic
     trigger: SHOOT_BOW
     slots: hands
     materials: [BOW, CROSSBOW]
@@ -145,6 +166,8 @@ enchantments:
 
   hare:
     name: "Salto del cometa"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: PERIODIC
     slots: feet
     materials: &boots [LEATHER_BOOTS, CHAINMAIL_BOOTS, IRON_BOOTS, GOLDEN_BOOTS, DIAMOND_BOOTS, NETHERITE_BOOTS]
@@ -156,6 +179,8 @@ enchantments:
 
   magma_step:
     name: "Senda de la caldera"
+    rarity: epic
+    level-rarities: {'2': legendary}
     trigger: PERIODIC
     slots: feet
     materials: *boots
@@ -166,6 +191,7 @@ enchantments:
 
   glass_shatter:
     name: "Quebracristales"
+    rarity: common
     trigger: BLOCK_DAMAGE
     slots: hand
     materials: *pickaxes
@@ -174,6 +200,8 @@ enchantments:
 
   tree_feller:
     name: "Titán del bosque"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary, '4': legendary}
     trigger: BLOCK_BREAK
     slots: hand
     materials: &axes [WOODEN_AXE, STONE_AXE, IRON_AXE, GOLDEN_AXE, DIAMOND_AXE, NETHERITE_AXE]
@@ -185,6 +213,7 @@ enchantments:
 
   auto_collect:
     name: "Imán del saqueador"
+    rarity: rare
     trigger: BLOCK_BREAK
     slots: hand
     materials: [WOODEN_PICKAXE, STONE_PICKAXE, IRON_PICKAXE, GOLDEN_PICKAXE, DIAMOND_PICKAXE, NETHERITE_PICKAXE, WOODEN_SHOVEL, STONE_SHOVEL, IRON_SHOVEL, GOLDEN_SHOVEL, DIAMOND_SHOVEL, NETHERITE_SHOVEL, WOODEN_AXE, STONE_AXE, IRON_AXE, GOLDEN_AXE, DIAMOND_AXE, NETHERITE_AXE]
@@ -193,6 +222,7 @@ enchantments:
 
   blast_arrow:
     name: "Flecha Cataclismo"
+    rarity: epic
     trigger: SHOOT_BOW
     slots: hands
     materials: [BOW, CROSSBOW]
@@ -202,6 +232,8 @@ enchantments:
 
   toxic_hook:
     name: "Anzuelo de Hidra"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: FISH_HOOK
     slots: hands
     materials: [FISHING_ROD]
@@ -215,6 +247,8 @@ enchantments:
 
   ember_hook:
     name: "Anzuelo del Averno"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: FISH_HOOK
     slots: hands
     materials: [FISHING_ROD]
@@ -228,6 +262,7 @@ enchantments:
 
   poison_arrow:
     name: "Aguijón Esmeralda"
+    rarity: uncommon
     trigger: SHOOT_BOW
     slots: hands
     materials: [BOW, CROSSBOW]
@@ -237,6 +272,8 @@ enchantments:
 
   viper:
     name: "Colmillo de Víbora"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -253,6 +290,8 @@ enchantments:
 
   frostblade:
     name: "Filo del Invierno Eterno"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -269,6 +308,8 @@ enchantments:
 
   blindblade:
     name: "Corte del Eclipse"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -285,6 +326,7 @@ enchantments:
 
   blind_arrow:
     name: "Proyectil del Ocaso"
+    rarity: uncommon
     trigger: SHOOT_BOW
     slots: hands
     materials: [BOW, CROSSBOW]
@@ -296,6 +338,8 @@ enchantments:
 
   thunderblade:
     name: "Veredicto del Trueno"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -312,6 +356,7 @@ enchantments:
 
   disorder:
     name: "Cisma del Caos"
+    rarity: epic
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -327,6 +372,7 @@ enchantments:
 
   disarmer:
     name: "Ladrón de Corazas"
+    rarity: legendary
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -342,6 +388,7 @@ enchantments:
 
   autocook:
     name: "Forja del Sol"
+    rarity: rare
     trigger: BLOCK_BREAK
     slots: hand
     materials: [WOODEN_AXE, WOODEN_PICKAXE, WOODEN_SHOVEL, WOODEN_HOE, STONE_AXE, STONE_PICKAXE, STONE_SHOVEL, STONE_HOE, IRON_AXE, IRON_PICKAXE, IRON_SHOVEL, IRON_HOE, GOLDEN_AXE, GOLDEN_PICKAXE, GOLDEN_SHOVEL, GOLDEN_HOE, DIAMOND_AXE, DIAMOND_PICKAXE, DIAMOND_SHOVEL, DIAMOND_HOE, NETHERITE_AXE, NETHERITE_PICKAXE, NETHERITE_SHOVEL, NETHERITE_HOE]
@@ -352,6 +399,8 @@ enchantments:
 
   venom_blade:
     name: "Acero de la Marchitez"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -368,6 +417,7 @@ enchantments:
 
   venom_bow:
     name: "Arco de la Marchitez"
+    rarity: epic
     trigger: SHOOT_BOW
     slots: hands
     materials: [BOW, CROSSBOW]
@@ -379,6 +429,8 @@ enchantments:
 
   demon_reforged:
     name: "Forja Demoníaca"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary}
     trigger: KILL
     slots: hand
     materials: *swords
@@ -392,6 +444,8 @@ enchantments:
 
   ultimate_life:
     name: "Último Latido"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: ITEM_WEAR
     slots: hands
     materials: &durable_gear [LEATHER_HELMET, LEATHER_CHESTPLATE, LEATHER_LEGGINGS, LEATHER_BOOTS, CHAINMAIL_HELMET, CHAINMAIL_CHESTPLATE, CHAINMAIL_LEGGINGS, CHAINMAIL_BOOTS, IRON_HELMET, IRON_CHESTPLATE, IRON_LEGGINGS, IRON_BOOTS, GOLDEN_HELMET, GOLDEN_CHESTPLATE, GOLDEN_LEGGINGS, GOLDEN_BOOTS, DIAMOND_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, DIAMOND_BOOTS, NETHERITE_HELMET, NETHERITE_CHESTPLATE, NETHERITE_LEGGINGS, NETHERITE_BOOTS, TURTLE_HELMET, WOODEN_SWORD, WOODEN_AXE, WOODEN_PICKAXE, WOODEN_SHOVEL, WOODEN_HOE, STONE_SWORD, STONE_AXE, STONE_PICKAXE, STONE_SHOVEL, STONE_HOE, IRON_SWORD, IRON_AXE, IRON_PICKAXE, IRON_SHOVEL, IRON_HOE, GOLDEN_SWORD, GOLDEN_AXE, GOLDEN_PICKAXE, GOLDEN_SHOVEL, GOLDEN_HOE, DIAMOND_SWORD, DIAMOND_AXE, DIAMOND_PICKAXE, DIAMOND_SHOVEL, DIAMOND_HOE, NETHERITE_SWORD, NETHERITE_AXE, NETHERITE_PICKAXE, NETHERITE_SHOVEL, NETHERITE_HOE, ELYTRA, BOW, CROSSBOW, TRIDENT, FISHING_ROD, SHIELD, SHEARS, FLINT_AND_STEEL, BRUSH, MACE]
@@ -404,6 +458,7 @@ enchantments:
 
   binding:
     name: "Tributo al Vacío"
+    rarity: common
     trigger: DEATH
     slots: any
     materials: *durable_gear
@@ -414,6 +469,7 @@ enchantments:
 
   beheading:
     name: "Segador de Coronas"
+    rarity: rare
     trigger: KILL
     slots: hand
     materials: *swords
@@ -424,6 +480,8 @@ enchantments:
 
   berserker:
     name: "Furia del Titán"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: *axes
@@ -441,6 +499,8 @@ enchantments:
 
   aegis:
     name: "Égida del Viento"
+    rarity: common
+    level-rarities: {'2': uncommon, '3': rare}
     trigger: INJURY
     slots: armor
     materials: &arena_armor [LEATHER_HELMET, LEATHER_CHESTPLATE, LEATHER_LEGGINGS, LEATHER_BOOTS, CHAINMAIL_HELMET, CHAINMAIL_CHESTPLATE, CHAINMAIL_LEGGINGS, CHAINMAIL_BOOTS, IRON_HELMET, IRON_CHESTPLATE, IRON_LEGGINGS, IRON_BOOTS, GOLDEN_HELMET, GOLDEN_CHESTPLATE, GOLDEN_LEGGINGS, GOLDEN_BOOTS, DIAMOND_HELMET, DIAMOND_CHESTPLATE, DIAMOND_LEGGINGS, DIAMOND_BOOTS, NETHERITE_HELMET, NETHERITE_CHESTPLATE, NETHERITE_LEGGINGS, NETHERITE_BOOTS, TURTLE_HELMET]
@@ -455,6 +515,8 @@ enchantments:
 
   mob_pull:
     name: "Gravedad del Abismo"
+    rarity: common
+    level-rarities: {'2': uncommon, '3': rare}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -470,6 +532,8 @@ enchantments:
 
   mob_nova:
     name: "Nova de Cacería"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -485,6 +549,8 @@ enchantments:
 
   sword_ward:
     name: "Escudo de Adamantio"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary, '4': legendary}
     trigger: DEFEND
     slots: armor
     materials: *arena_armor
@@ -498,6 +564,7 @@ enchantments:
 
   arrow_dodge:
     name: "Paso Fantasma"
+    rarity: epic
     trigger: INJURY
     slots: armor
     materials: *arena_armor
@@ -510,6 +577,8 @@ enchantments:
 
   weapon_sacrifice:
     name: "Pacto de la Mella"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -524,6 +593,8 @@ enchantments:
 
   bleed:
     name: "Marca Carmesí"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -540,6 +611,7 @@ enchantments:
 
   carrot_planter:
     name: "Siembra de la Aurora"
+    rarity: common
     trigger: INTERACT
     slots: hands
     materials: [WOODEN_HOE, STONE_HOE, IRON_HOE, GOLDEN_HOE, DIAMOND_HOE, NETHERITE_HOE]
@@ -552,6 +624,8 @@ enchantments:
 
   damage_guard:
     name: "Piel del Coloso"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: INJURY
     slots: armor
     materials: *arena_armor
@@ -565,6 +639,8 @@ enchantments:
 
   player_nova:
     name: "Ruina del Duelo"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -581,6 +657,8 @@ enchantments:
 
   nausea:
     name: "Vértigo del Vacío"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -598,6 +676,8 @@ enchantments:
 
   air_launch:
     name: "Cólera del Vendaval"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: DEFEND
     slots: armor
     materials: *arena_armor
@@ -613,6 +693,8 @@ enchantments:
 
   ender_slayer:
     name: "Perdición del End"
+    rarity: common
+    level-rarities: {'2': uncommon, '3': rare}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -628,6 +710,7 @@ enchantments:
 
   cleanse:
     name: "Purga de la Luz"
+    rarity: rare
     trigger: PERIODIC
     slots: armor
     materials: *arena_armor
@@ -640,6 +723,7 @@ enchantments:
 
   creeper_guard:
     name: "Legión de la Mecha"
+    rarity: legendary
     trigger: DEFEND
     slots: armor
     materials: *arena_armor
@@ -652,6 +736,7 @@ enchantments:
 
   extinguish:
     name: "Bendición de la Lluvia"
+    rarity: common
     trigger: PERIODIC
     slots: armor
     materials: *arena_armor
@@ -665,6 +750,8 @@ enchantments:
 
   rocket_boost:
     name: "Estela de Supernova"
+    rarity: rare
+    level-rarities: {'2': epic, '3': legendary}
     trigger: FLIGHT_USE
     slots: chest
     materials: [ELYTRA]
@@ -679,6 +766,8 @@ enchantments:
 
   retaliation_fire:
     name: "Venganza de Salamandra"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: DEFEND
     slots: armor
     materials: *arena_armor
@@ -694,6 +783,8 @@ enchantments:
 
   night_hunter:
     name: "Cazador de Medianoche"
+    rarity: uncommon
+    level-rarities: {'2': rare, '3': epic}
     trigger: ATTACK
     slots: hand
     materials: *swords
@@ -709,6 +800,8 @@ enchantments:
 
   reflect:
     name: "Espejo del Némesis"
+    rarity: legendary
+    level-rarities: {'2': legendary, '3': legendary}
     trigger: DEFEND
     slots: armor
     materials: *arena_armor
@@ -724,6 +817,8 @@ enchantments:
 
   revive:
     name: "Renacer del Fénix"
+    rarity: legendary
+    level-rarities: {'2': legendary, '3': legendary}
     trigger: INJURY
     slots: armor
     materials: *arena_armor
@@ -738,6 +833,8 @@ enchantments:
 
   glide_boost:
     name: "Alas del Vendaval"
+    rarity: epic
+    level-rarities: {'2': legendary, '3': legendary}
     trigger: FLIGHT_USE
     slots: chest
     materials: [ELYTRA]
@@ -751,6 +848,7 @@ enchantments:
 
   critical_finish:
     name: "Sentencia Final"
+    rarity: legendary
     trigger: ATTACK
     slots: hand
     materials: *swords

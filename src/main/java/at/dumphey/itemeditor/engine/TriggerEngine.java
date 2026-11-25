@@ -55,6 +55,14 @@ public final class TriggerEngine {
         private final EnumSet<Material> materials = EnumSet.noneOf(Material.class);
         /** True when some bound rule accepts any material: then no item can be skipped by material. */
         private boolean unfiltered;
+        private int unfilteredSlots;
+        private final Map<EquipmentSlot, EnumSet<Material>> materialsBySlot = new EnumMap<>(EquipmentSlot.class);
+
+        private boolean accepts(EquipmentSlot slot, int bit, Material type) {
+            if ((unfilteredSlots & bit) != 0) return true;
+            final EnumSet<Material> allowed = materialsBySlot.get(slot);
+            return allowed != null && allowed.contains(type);
+        }
 
         private boolean isEmpty() {
             return global.isEmpty() && !bound;
@@ -76,6 +84,10 @@ public final class TriggerEngine {
 
     private Bucket[] buckets = new Bucket[TriggerType.values().length];
     private BukkitTask periodicTask;
+    private final List<Player> periodicPlayers = new ArrayList<>();
+    private int periodicCursor;
+    private int periodicPhase;
+    private int periodicSlices = 8;
     private int depth;
     private long periodicTick;
 
@@ -210,6 +222,8 @@ public final class TriggerEngine {
         enabled = plugin.getConfig().getBoolean("triggers.enabled", true);
         maxRuleErrors = Math.max(1, plugin.getConfig().getInt("triggers.max-rule-errors", 5));
         periodicBaseTicks = Math.max(1, plugin.getConfig().getInt("triggers.periodic-base-ticks", 20));
+        periodicSlices = Math.max(1, Math.min(periodicBaseTicks,
+                Math.min(20, plugin.getConfig().getInt("enchantment-performance.periodic-spread-ticks", 8))));
         if (customCommands) {
             consumables.load();
         }
@@ -235,6 +249,9 @@ public final class TriggerEngine {
         loaded.addAll(loader.loadAll(folder));
         disabledInFiles = loader.disabledCount();
         addRules(loaded);
+        if (enchantCatalog != null) {
+            enchantCatalog.startAcquisition();
+        }
         if (customCommands) {
             customItems.load();
         }
@@ -259,15 +276,11 @@ public final class TriggerEngine {
             HandlerList.unregisterAll(listener);
         }
         listeners.clear();
-        if (periodicTask != null) {
-            periodicTask.cancel();
-            periodicTask = null;
-        }
+        stopPeriodic();
         rules.clear();
         errors.clear();
         buckets = new Bucket[TriggerType.values().length];
         disabledInFiles = 0;
-        depth = 0;
     }
 
     public void onQuit(UUID player) {
@@ -294,8 +307,15 @@ public final class TriggerEngine {
         bucket.slotMask |= rule.getSlotMask();
         if (rule.getMaterials() == null) {
             bucket.unfiltered = true;
+            bucket.unfilteredSlots |= rule.getSlotMask();
         } else {
             bucket.materials.addAll(rule.getMaterials());
+            for (int i = 0; i < Slots.SLOTS.length; i++) {
+                if ((rule.getSlotMask() & (1 << i)) != 0) {
+                    bucket.materialsBySlot.computeIfAbsent(Slots.SLOTS[i], slot -> EnumSet.noneOf(Material.class))
+                            .addAll(rule.getMaterials());
+                }
+            }
         }
     }
 
@@ -306,10 +326,9 @@ public final class TriggerEngine {
             final boolean needed = bucket != null && !bucket.isEmpty();
             if (type == TriggerType.PERIODIC) {
                 if (needed && periodicTask == null) {
-                    periodicTask = Bukkit.getScheduler().runTaskTimer(plugin, this::periodicTick, periodicBaseTicks, periodicBaseTicks);
+                    periodicTask = Bukkit.getScheduler().runTaskTimer(plugin, this::periodicTick, periodicBaseTicks, 1);
                 } else if (!needed && periodicTask != null) {
-                    periodicTask.cancel();
-                    periodicTask = null;
+                    stopPeriodic();
                 }
                 continue;
             }
@@ -418,7 +437,7 @@ public final class TriggerEngine {
                 continue;
             }
             final ItemStack item = inventory.getItem(Slots.SLOTS[i]);
-            if (item == null || (!bucket.unfiltered && !bucket.materials.contains(item.getType()))) {
+            if (item == null || !bucket.accepts(Slots.SLOTS[i], bit, item.getType())) {
                 continue;
             }
             final ItemTagData tag = tags.read(item);
@@ -477,6 +496,10 @@ public final class TriggerEngine {
         }
         if (rule.isIgnoreCancelled() && ctx.isCancelled()) {
             return; // another plugin (protection, anti-cheat...) already said no
+        }
+        if (rule.isCatalog() && rule.getCooldownMs() > 0 && rule.cooldownMessage() == null
+                && !cooldowns.isReady(ctx.player.getUniqueId(), rule.getId())) {
+            return;
         }
         ctx.rule = rule;
         rulesEvaluated++;
@@ -538,16 +561,33 @@ public final class TriggerEngine {
         }, ticks);
     }
 
-    private void periodicTick() {
-        final Bucket bucket = buckets[TriggerType.PERIODIC.ordinal()];
-        if (bucket == null || bucket.isEmpty()) {
-            return;
+    private void stopPeriodic() {
+        if (periodicTask != null) {
+            periodicTask.cancel();
+            periodicTask = null;
         }
-        periodicTick++;
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.isDead()) {
-                continue;
-            }
+        periodicPlayers.clear();
+        periodicCursor = 0;
+        periodicPhase = 0;
+    }
+
+    private void periodicTick() {
+        final int phase = periodicPhase;
+        periodicPhase = (phase + 1) % periodicBaseTicks;
+        if (phase >= periodicSlices) return;
+        final Bucket bucket = buckets[TriggerType.PERIODIC.ordinal()];
+        if (bucket == null || bucket.isEmpty()) return;
+        if (phase == 0) {
+            periodicTick++;
+            periodicPlayers.clear();
+            periodicPlayers.addAll(Bukkit.getOnlinePlayers());
+            periodicCursor = 0;
+        }
+        final int through = (int) ((periodicPlayers.size() * (long) (phase + 1) + periodicSlices - 1) / periodicSlices);
+        final BukkitTask active = periodicTask;
+        while (periodicTask == active && periodicCursor < through) {
+            final Player player = periodicPlayers.get(periodicCursor++);
+            if (!player.isOnline() || player.isDead()) continue;
             final TriggerContext ctx = acquire();
             if (ctx == null) {
                 return;
@@ -564,6 +604,10 @@ public final class TriggerEngine {
             } finally {
                 release(ctx);
             }
+        }
+        if (periodicTask == active && periodicCursor == periodicPlayers.size()) {
+            periodicPlayers.clear();
+            periodicCursor = 0;
         }
     }
 

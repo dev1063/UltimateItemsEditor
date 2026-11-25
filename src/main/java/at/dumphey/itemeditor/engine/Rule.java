@@ -8,6 +8,7 @@ import java.util.Set;
 public final class Rule {
 
     private final String id;
+    private final boolean catalog;
     private final String source;
     private final TriggerType trigger;
     private final String itemId;
@@ -31,6 +32,7 @@ public final class Rule {
          int slotMask, Condition conditions, RuleAction[] actions, long cooldownMs, Template cooldownMessage,
          boolean ignoreCancelled, int period, String displayName, String description) {
         this.id = id;
+        this.catalog = "custom-enchantments.yml".equals(source) && id.startsWith("catalog.");
         this.source = source;
         this.trigger = trigger;
         this.itemId = itemId;
@@ -56,6 +58,10 @@ public final class Rule {
         return new Rule(id, source, trigger, itemId, enchantId, materials, slotMask, eligible,
                 new RuleAction[]{ctx -> levels[ctx.level].execute(ctx)}, cooldownMs, cooldownMessage,
                 ignoreCancelled, period, displayName, description);
+    }
+
+    boolean isCatalog() {
+        return catalog;
     }
 
     public String getId() {
