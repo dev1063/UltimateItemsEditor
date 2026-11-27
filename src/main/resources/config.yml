@@ -14,6 +14,11 @@ modules:
 vanilla-armor-sets:
   enabled: false
 
+# Optional target recognition for conditions in rules and item skills.
+integrations:
+  mythicmobs:
+    enabled: true
+
 # Language of the plugin messages AND of the texts written into item lore (enchantment names,
 # attribute names, %lang:key% used inside templates). Any file in plugins/UltimateItemsEditor/messages/ works:
 # copy english.yml to e.g. portuguese.yml, translate it and set "language: portuguese".
@@ -95,3 +100,38 @@ gui:
 # Each one is a file in plugins/UltimateItemsEditor/customitems/. Their skills run on the trigger engine.
 customitems:
   enabled: true
+
+# Menus for /ie save, /ie manage and /ie list. Keep IDs stable when changing the name or icon.
+# Use lowercase letters, numbers, _ or -. "all" and "uncategorized" are reserved.
+# Entries removed or disabled appear under "Sin categoría" until the same ID is enabled again.
+saved-item-categories:
+  armas:
+    name: "Armas"
+    icon: IRON_SWORD
+    description: "Espadas, arcos y equipo de combate"
+    order: 10
+  armaduras:
+    name: "Armaduras"
+    icon: IRON_CHESTPLATE
+    description: "Piezas defensivas y sets"
+    order: 20
+  herramientas:
+    name: "Herramientas"
+    icon: IRON_PICKAXE
+    description: "Picos, palas y herramientas especiales"
+    order: 30
+  consumibles:
+    name: "Consumibles"
+    icon: HONEY_BOTTLE
+    description: "Comida, pociones y recompensas de un solo uso"
+    order: 40
+  materiales:
+    name: "Materiales"
+    icon: IRON_INGOT
+    description: "Ingredientes, recursos y componentes"
+    order: 50
+  otros:
+    name: "Otros"
+    icon: CHEST
+    description: "Llaves, trofeos y coleccionables"
+    order: 60

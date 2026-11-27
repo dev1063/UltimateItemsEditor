@@ -34,13 +34,15 @@ public class ItemGiveUiScreen extends UiScreen {
     private static final int[] AMOUNT_PRESETS = {1, 2, 4, 8, 16, 32, 64};
 
     private final String itemName;
+    private final String listCategory;
     private final int listPage;
     private int page = 0;
     private int amount = 1;
 
-    public ItemGiveUiScreen(Player player, String itemName, int listPage) {
+    public ItemGiveUiScreen(Player player, String itemName, String listCategory, int listPage) {
         super(player, 54, "Give item");
         this.itemName = itemName;
+        this.listCategory = listCategory;
         this.listPage = listPage;
     }
 
@@ -55,7 +57,7 @@ public class ItemGiveUiScreen extends UiScreen {
     private void setBack() {
         setItem(UiPosition.of(5, 0), new ActionUiItem(this, player,
                 ItemBuilder.uiItem(Material.ARROW, "§cBack", "Back to the item"),
-                () -> open(new ItemActionsUiScreen(player, itemName, listPage))));
+                () -> open(new ItemActionsUiScreen(player, itemName, listCategory, listPage))));
     }
 
     @Override

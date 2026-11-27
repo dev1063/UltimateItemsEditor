@@ -2,10 +2,10 @@ package at.dumphey.itemeditor.commands;
 
 import at.dumphey.itemeditor.UltimateItemsEditor;
 import at.dumphey.itemeditor.itemeditor.modules.list.ItemGiveUiScreen;
-import at.dumphey.itemeditor.itemeditor.modules.list.ItemListUiScreen;
+import at.dumphey.itemeditor.itemeditor.modules.list.SavedCategoryUiScreen;
 import at.dumphey.itemeditor.itemeditor.storage.SerializedItem;
+import at.dumphey.itemeditor.itemeditor.storage.ItemStorage;
 import at.dumphey.itemeditor.utils.Messages;
-import at.dumphey.itemeditor.utils.NameUtils;
 import at.dumphey.itemeditor.utils.Permissions;
 import net.md_5.bungee.api.chat.*;
 import org.bukkit.Bukkit;
@@ -19,7 +19,6 @@ import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -62,7 +61,7 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
         } else if (isPlayer && args[0].equalsIgnoreCase("get")) {
             handleGet((Player) sender, args);
         } else if (isPlayer && args[0].equalsIgnoreCase("manage")) {
-            itemEditor.getUiManager().open((Player) sender, new ItemListUiScreen((Player) sender));
+            itemEditor.getUiManager().open((Player) sender, new SavedCategoryUiScreen((Player) sender));
         } else if (args[0].equalsIgnoreCase("template")) {
             templateCommands.handleTemplate(sender, args);
         } else if (args[0].equalsIgnoreCase("language")) {
@@ -131,11 +130,12 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
             return;
         }
 
-        if (at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getItemStorage().deleteItem(args[1])) {
-            Messages.send(sender, "§aThe item was deleted.");
-        } else {
-            Messages.send(sender, "§cAn item called §o" + args[1] + "§c could not be found.");
-        }
+        final ItemStorage storage = itemEditor.getItemStorage();
+        storage.deleteItem(args[1]).whenCompleteAsync((deleted, error) -> {
+            if (error != null) Messages.send(sender, "§cNo se pudo borrar el ítem. Revisa la consola.");
+            else if (deleted) Messages.send(sender, "§aSe borró el ítem.");
+            else Messages.send(sender, "§cNo hay un ítem guardado con ese nombre.");
+        }, storage.mainThreadExecutor());
     }
 
     private void handleList(CommandSender sender, String[] args) {
@@ -180,7 +180,7 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
             return;
         }
 
-        at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getUiManager().open(((Player) sender), new ItemListUiScreen(((Player) sender)));
+        at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getUiManager().open(((Player) sender), new SavedCategoryUiScreen(((Player) sender)));
     }
 
     private void handleGet(Player player, String[] args) {
@@ -203,36 +203,17 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
 
     private void handleSave(Player player, String[] args) {
         if (args.length < 2) {
-            Messages.send(player, "§cPlease include a name for your item, e.g. §o/ie save <name>");
+            Messages.send(player, "§cIndica un nombre con §o/ie save <nombre>");
             return;
         }
 
-        String name = args[1];
-
-        if (player.getInventory().getItemInMainHand().getType() == Material.AIR) {
-            Messages.send(player, "§cYou need to hold an item in your main hand.");
+        final ItemStack hand = player.getInventory().getItemInMainHand();
+        if (hand.getType().isAir()) {
+            Messages.send(player, "§cSujeta el ítem en la mano principal.");
             return;
         }
 
-        try {
-            at.dumphey.itemeditor.itemeditor.ItemEditor.INSTANCE.getItemStorage().saveItem(name, player.getInventory().getItemInMainHand());
-            player.playSound(player.getLocation(), Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1, 1);
-            Messages.send(player, "§aYour §o" + getItemName(player.getInventory()
-                    .getItemInMainHand()) + " §awas saved under the name §o" + name + "§a.");
-        } catch (IOException e) {
-            Messages.send(player, "§cSaving failed. Please check the console output for more information.");
-        }
-
-    }
-
-    private String getItemName(ItemStack itemStack) {
-        if (itemStack.hasItemMeta() && itemStack.getItemMeta() != null && itemStack.getItemMeta().hasDisplayName()) {
-            return itemStack.getItemMeta().getDisplayName();
-        }
-
-        return NameUtils.enumToFriendlyName(itemStack
-                .getType()
-                .name());
+        itemEditor.getUiManager().open(player, SavedCategoryUiScreen.forSave(player, args[1], hand));
     }
 
     private void handleReopen(Player player) {
@@ -362,7 +343,7 @@ public class UltimateItemsEditorCommand implements CommandExecutor, TabCompleter
         if (itemEditor.modules().disabledCommand("reopen", null) == null) {
             sendIfPlayer(sender, "  §e/ie reopen §8- §fReopen the editor with the last item.");
         }
-        sendIfPlayer(sender, "  §e/ie save <item> §8- §fSave the item you are holding.");
+        sendIfPlayer(sender, "  §e/ie save <item> §8- §fChoose a category and save a copy of the item in your hand.");
         sender.sendMessage("  §e/ie delete <name> §8- §fDelete an item.");
         sendIfPlayer(sender, "  §e/ie get <item> §8- §fGive yourself an item.");
         sendIfPlayer(sender, "  §e/ie give <player> <item> <amount> §8- §fGive an item to a player.");

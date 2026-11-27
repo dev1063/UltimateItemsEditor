@@ -3,8 +3,10 @@ package at.dumphey.itemeditor.engine;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.event.Event;
 import org.bukkit.event.HandlerList;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -81,6 +83,10 @@ public final class TriggerEngine {
     private final TriggerContext[] pool = new TriggerContext[MAX_DEPTH];
     private final ConsumableManager consumables;
     private final CustomItemManager customItems;
+    private final MythicMobLookup mythicMobs;
+    private final List<Runnable> confirmedHits = new ArrayList<>();
+    private BukkitTask confirmedHitTask;
+    private long hitGeneration;
 
     private Bucket[] buckets = new Bucket[TriggerType.values().length];
     private BukkitTask periodicTask;
@@ -121,6 +127,7 @@ public final class TriggerEngine {
         this.tags = new ItemTags(plugin);
         this.consumables = consumablesEnabled ? new ConsumableManager(this) : null;
         this.customItems = customCommands ? new CustomItemManager(this) : null;
+        this.mythicMobs = new MythicMobLookup(plugin);
         Conditions.registerDefaults(this);
         Actions.registerDefaults(this);
         this.enchantCatalog = customEnchantments ? new EnchantCatalog(this) : null;
@@ -228,6 +235,7 @@ public final class TriggerEngine {
         periodicBaseTicks = Math.max(1, plugin.getConfig().getInt("triggers.periodic-base-ticks", 20));
         periodicSlices = Math.max(1, Math.min(periodicBaseTicks,
                 Math.min(20, plugin.getConfig().getInt("enchantment-performance.periodic-spread-ticks", 8))));
+        if (enabled && (customCommands || customEnchantments)) mythicMobs.load();
         if (consumables != null) {
             consumables.load();
         }
@@ -270,6 +278,13 @@ public final class TriggerEngine {
 
     /** Unregisters every listener and task and forgets the rules. Cooldowns are kept. */
     public void shutdown() {
+        mythicMobs.stop();
+        if (confirmedHitTask != null) {
+            confirmedHitTask.cancel();
+            confirmedHitTask = null;
+        }
+        confirmedHits.clear();
+        hitGeneration++;
         if (enchantCatalog != null) {
             enchantCatalog.stop();
         }
@@ -547,6 +562,54 @@ public final class TriggerEngine {
             rule.disable();
             plugin.getLogger().severe("Rule '" + rule.getId() + "' was switched off after " + count
                     + " errors. Fix it and run /ie rules reload.");
+        }
+    }
+
+    public boolean hasMythicMobs() {
+        return mythicMobs != null && mythicMobs.isAvailable();
+    }
+
+    String mythicId(org.bukkit.entity.Entity target) {
+        return mythicMobs == null ? null : mythicMobs.internalName(target);
+    }
+
+    @FunctionalInterface
+    interface ConfirmedHit {
+        void apply(Player player, LivingEntity target, double damage);
+    }
+
+    /** Confirms the final damage after protection and damage listeners have run. */
+    void afterAttack(TriggerContext ctx, ConfirmedHit effect) {
+        if (ctx.type != TriggerType.ATTACK || !(ctx.event instanceof EntityDamageByEntityEvent)
+                || !(ctx.target instanceof LivingEntity) || confirmedHits.size() >= 256) return;
+        final EntityDamageByEntityEvent event = (EntityDamageByEntityEvent) ctx.event;
+        final Player player = ctx.player;
+        final LivingEntity target = (LivingEntity) ctx.target;
+        final double before = target.getHealth();
+        final Rule rule = ctx.rule;
+        confirmedHits.add(() -> {
+            if (event.isCancelled() || !player.isOnline() || player.isDead()
+                    || player.getWorld() != target.getWorld()) return;
+            final double damage = Math.min(before, event.getFinalDamage());
+            if (!Double.isFinite(damage) || damage <= 0) return;
+            try {
+                effect.apply(player, target, damage);
+            } catch (RuntimeException ex) {
+                if (rule != null) onRuleError(rule, ex);
+                else plugin.getLogger().log(Level.WARNING, "Confirmed attack effect failed", ex);
+            }
+        });
+        if (confirmedHitTask == null) {
+            confirmedHitTask = Bukkit.getScheduler().runTask(plugin, () -> {
+                confirmedHitTask = null;
+                final long generation = hitGeneration;
+                final List<Runnable> hits = new ArrayList<>(confirmedHits);
+                confirmedHits.clear();
+                for (Runnable hit : hits) {
+                    if (generation != hitGeneration) break;
+                    hit.run();
+                }
+            });
         }
     }
 

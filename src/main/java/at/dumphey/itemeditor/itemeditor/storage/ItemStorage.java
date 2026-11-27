@@ -1,43 +1,53 @@
 package at.dumphey.itemeditor.itemeditor.storage;
 
 import at.dumphey.itemeditor.UltimateItemsEditor;
-import com.google.common.hash.Hashing;
+import org.bukkit.Bukkit;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.IllegalPluginAccessException;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
+import java.io.EOFException;
+import java.io.ObjectInputFilter;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 
 /**
  * Saved items. The items live in memory (that is what the GUI and commands read); every change is serialized on the
  * main thread (Bukkit objects must not leave it) and the file write/delete is queued to one background thread, so
  * saving never blocks the server. The thread exists only while there is something to write and ends 5 seconds after.
- * Files are written to a temporary file and moved into place, so a crash can never leave a half-written item.
+ * Files are written to a temporary file before replacing the previous copy.
  */
 public class ItemStorage {
 
-    private static final String TEMP_SUFFIX = ".tmp";
+    private static final int QUEUE_CAPACITY = 256;
+    private static final long MAX_QUEUED_BYTES = 64L * 1024 * 1024;
     private static final Comparator<SerializedItem> BY_NAME = new Comparator<SerializedItem>() {
         @Override
         public int compare(SerializedItem a, SerializedItem b) {
@@ -47,71 +57,128 @@ public class ItemStorage {
 
     private final Map<String, SerializedItem> storedItems = new HashMap<>();
     private List<SerializedItem> sortedCache;
+    private final Map<String, SerializedItem> durable = new ConcurrentHashMap<>();
+    private final Map<String, Object> pending = new ConcurrentHashMap<>();
+    private final Set<String> recovered = ConcurrentHashMap.newKeySet();
+    private final AtomicLong queuedBytes = new AtomicLong();
+    private final UltimateItemsEditor plugin = UltimateItemsEditor.getInstance();
+    private final Path directory = Paths.get(plugin.getDataFolder().getPath(), "items");
+    private final ItemFiles files = new ItemFiles(directory, plugin.getLogger());
+    private boolean loaded;
 
-    /** core 0 / max 1 / unbounded queue: no thread at all until the first write, one thread afterwards, FIFO order. */
+    /** No thread until the first write, then one background writer in submission order. */
     private final ThreadPoolExecutor io = new ThreadPoolExecutor(0, 1, 5L, TimeUnit.SECONDS,
-            new LinkedBlockingQueue<Runnable>(), runnable -> {
+            new LinkedBlockingQueue<>(QUEUE_CAPACITY), runnable -> {
         final Thread thread = new Thread(runnable, "UltimateItemsEditor-IO");
         thread.setDaemon(true);
         return thread;
     });
 
     public void reload() {
-        UltimateItemsEditor.getInstance().getLogger().log(Level.INFO, "Reloading items.");
-        storedItems.clear();
-        sortedCache = null;
-        final File storageFolder = getStoragePath().toFile();
-        if (!storageFolder.exists()) {
-            storageFolder.mkdirs();
-        }
-        final File[] files = storageFolder.listFiles();
-        if (files != null) {
-            for (File file : files) {
-                if (!file.isFile()) {
-                    continue;
-                }
-                if (file.getName().endsWith(TEMP_SUFFIX)) {
-                    file.delete(); // leftover of a write that never finished; the real file is still intact
-                    continue;
-                }
-                try {
-                    loadItem(file);
-                } catch (Exception e) { // make sure to catch any weird errors
-                    UltimateItemsEditor.getInstance()
-                            .getLogger()
-                            .log(Level.SEVERE, "Error while loading item from file " + file.toPath(), e);
-                }
+        plugin.getLogger().info("Reloading items.");
+        if (!pending.isEmpty()) {
+            try {
+                io.submit(() -> { }).get(10, TimeUnit.SECONDS);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            } catch (ExecutionException | TimeoutException | RejectedExecutionException e) {
+                plugin.getLogger().log(Level.WARNING, "Could not flush items before reloading", e);
+                return;
             }
         }
-        UltimateItemsEditor.getInstance()
-                .getLogger()
-                .log(Level.INFO, "Loaded " + storedItems.size() + " items from storage.");
+        final Map<String, SerializedItem> loadedItems = new HashMap<>();
+        final Set<String> recoveredItems = new HashSet<>();
+        try {
+            files.openDirectory();
+            final Set<String> names = new HashSet<>();
+            try (DirectoryStream<Path> entries = Files.newDirectoryStream(directory)) {
+                for (Path entry : entries) {
+                    final String name = entry.getFileName().toString();
+                    final String base = ItemFiles.basename(name);
+                    if (ItemFiles.isItemFile(base)) names.add(base);
+                    else files.removeTemporaryFile(entry);
+                }
+            }
+            for (String filename : names) {
+                loadItem(directory.resolve(filename), loadedItems, recoveredItems);
+            }
+        } catch (IOException | RuntimeException ex) {
+            plugin.getLogger().log(Level.SEVERE, "Could not read the saved item directory", ex);
+            return;
+        }
+        pending.clear();
+        recovered.clear();
+        recovered.addAll(recoveredItems);
+        storedItems.clear();
+        storedItems.putAll(loadedItems);
+        durable.clear();
+        durable.putAll(loadedItems);
+        sortedCache = null;
+        loaded = true;
+        plugin.getLogger().info("Loaded " + storedItems.size() + " items from storage.");
     }
 
-    /** Waits (at most 10 seconds) for the pending writes. Call from onDisable. */
+    /** Waits (at most 10 seconds) for the queued writes during plugin shutdown. */
     public void shutdown() {
         io.shutdown();
         try {
             if (!io.awaitTermination(10, TimeUnit.SECONDS)) {
-                UltimateItemsEditor.getInstance().getLogger().warning("Some saved items could not be written in time.");
+                plugin.getLogger().warning("Some saved items could not be written in time.");
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }
 
-    private Path getStoragePath() {
-        return Paths.get(UltimateItemsEditor.getInstance().getDataFolder().getPath(), "items");
+    private void loadItem(Path primary, Map<String, SerializedItem> items, Set<String> recoveredItems) {
+        try {
+            if (ItemFiles.isDeleted(primary)) {
+                files.cleanDeleted(primary);
+                return;
+            }
+        } catch (IOException ex) {
+            plugin.getLogger().log(Level.WARNING, "Ignoring invalid deletion marker for " + primary, ex);
+        }
+        Exception primaryError;
+        try {
+            final SerializedItem item = decode(primary, ItemFiles.read(primary));
+            items.put(item.getName(), item);
+            return;
+        } catch (IOException | ClassNotFoundException | RuntimeException ex) {
+            primaryError = ex;
+        }
+        try {
+            final byte[] backup = ItemFiles.read(ItemFiles.backup(primary));
+            final SerializedItem item = decode(primary, backup);
+            items.put(item.getName(), item);
+            try {
+                files.restore(primary, backup);
+            } catch (IOException ex) {
+                recoveredItems.add(item.getName());
+                plugin.getLogger().log(Level.WARNING, "Could not repair saved item " + primary, ex);
+            }
+            plugin.getLogger().warning("Loaded saved item '" + item.getName() + "' from its backup.");
+        } catch (IOException | ClassNotFoundException | RuntimeException ex) {
+            primaryError.addSuppressed(ex);
+            plugin.getLogger().log(Level.SEVERE, "Could not load saved item " + primary, primaryError);
+        }
     }
 
-    private void loadItem(File file) throws IOException, ClassNotFoundException {
-        final String content = new String(Files.readAllBytes(file.toPath()), StandardCharsets.UTF_8);
-        final SerializedItem item = deserializeItem(content.replace("\n", "").replace("\r", "").trim());
-        storedItems.put(item.getName(), item);
+    private SerializedItem decode(Path primary, byte[] record) throws IOException, ClassNotFoundException {
+        final SerializedItem item = deserializeItem(ItemFiles.payload(record));
+        if (!files.primary(item.getName()).equals(primary)) {
+            throw new IOException("Saved item name does not match its file");
+        }
+        return item;
+    }
+
+    public Executor mainThreadExecutor() {
+        return task -> Bukkit.getScheduler().runTask(plugin, task);
     }
 
     public Collection<SerializedItem> getItems() {
-        return storedItems.values();
+        return Collections.unmodifiableCollection(storedItems.values());
     }
 
     /** All items ordered by name. The list is cached until the next change: do not modify it. */
@@ -132,83 +199,135 @@ public class ItemStorage {
         return storedItems.get(cleanName(name));
     }
 
-    /** Stores the item in memory right away and writes it to disk in the background. */
-    public void saveItem(String name, ItemStack itemStack) throws IOException {
-        name = cleanName(name);
-        final SerializedItem item = new SerializedItem(name, itemStack);
-        final String data = serializeItem(item); // main thread; fails here, before anything changed
-        final Path file = fileFor(name);
-        storedItems.put(name, item);
-        sortedCache = null;
-        io.execute(() -> {
-            try {
-                writeAtomically(file, data);
-            } catch (IOException e) {
-                UltimateItemsEditor.getInstance().getLogger()
-                        .log(Level.SEVERE, "Could not write item file " + file.getFileName(), e);
-            }
-        });
+    /** Rewrites the item while keeping its category, including categories removed from configuration. */
+    public CompletableFuture<Void> saveItem(String name, ItemStack itemStack) throws IOException {
+        final SerializedItem previous = getItem(name);
+        return saveItem(name, itemStack, previous == null ? null : previous.getCategory());
     }
 
-    public boolean deleteItem(String name) {
-        name = cleanName(name);
-        if (storedItems.remove(name) == null) {
-            return false;
+    /** Publishes a snapshot in memory. Completion confirms that its file was written. */
+    public CompletableFuture<Void> saveItem(String name, ItemStack itemStack, String category) throws IOException {
+        final String key = cleanName(name);
+        if (key.isEmpty() || itemStack == null || itemStack.getType().isAir() || itemStack.getAmount() <= 0) {
+            throw new IOException("A saved entry needs a name and a usable item");
         }
-        sortedCache = null;
-        final Path file = fileFor(name);
-        io.execute(() -> {
-            try {
-                Files.deleteIfExists(file);
-            } catch (IOException e) {
-                UltimateItemsEditor.getInstance().getLogger()
-                        .log(Level.SEVERE, "Could not delete item file " + file.getFileName(), e);
-            }
-        });
-        return true;
+        final SerializedItem item = new SerializedItem(key, itemStack.clone(), category);
+        return change(key, item, ItemFiles.encode(serializeItem(item)));
     }
 
-    private Path fileFor(String cleanName) {
-        return Paths.get(getStoragePath().toString(), Hashing.sha256().hashString(cleanName, StandardCharsets.UTF_8).toString());
-    }
-
-    private static void writeAtomically(Path file, String data) throws IOException {
-        final Path temp = file.resolveSibling(file.getFileName() + TEMP_SUFFIX);
-        Files.write(temp, Collections.singleton(data));
+    public CompletableFuture<Boolean> deleteItem(String name) {
+        final String key = cleanName(name);
+        if (!storedItems.containsKey(key)) return CompletableFuture.completedFuture(false);
         try {
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
-        } catch (AtomicMoveNotSupportedException e) {
-            Files.move(temp, file, StandardCopyOption.REPLACE_EXISTING);
+            return change(key, null, null).thenApply(result -> true);
+        } catch (IOException ex) {
+            final CompletableFuture<Boolean> failed = new CompletableFuture<>();
+            failed.completeExceptionally(ex);
+            return failed;
         }
     }
 
-    private String serializeItem(SerializedItem item) throws IOException {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-        BukkitObjectOutputStream dataOutput;
-        dataOutput = new BukkitObjectOutputStream(outputStream);
-        dataOutput.writeUTF(item.getName());
-        dataOutput.writeObject(item.getItemStack());
-        dataOutput.close();
-        return Base64.getEncoder().encodeToString(outputStream.toByteArray());
-    }
-
-    private static String padBase64String(String base64String) {
-        int padding = (4 - base64String.length() % 4) % 4;
-        StringBuilder paddedBase64 = new StringBuilder(base64String);
-        for (int i = 0; i < padding; i++) {
-            paddedBase64.append("=");
+    private CompletableFuture<Void> change(String key, SerializedItem item, byte[] data) throws IOException {
+        if (!loaded || io.isShutdown()) throw new IOException("Item storage is unavailable");
+        final int bytes = data == null ? 0 : data.length;
+        if (queuedBytes.addAndGet(bytes) > MAX_QUEUED_BYTES) {
+            queuedBytes.addAndGet(-bytes);
+            throw new IOException("The saved item queue is full");
         }
-        return paddedBase64.toString();
+        final Object mutation = new Object();
+        final Path file = files.primary(key);
+        final CompletableFuture<Void> result = new CompletableFuture<>();
+        synchronized (pending) {
+            try {
+                io.execute(() -> writeChange(key, item, data, file, mutation, result, bytes));
+                pending.put(key, mutation);
+                setItem(key, item);
+            } catch (RejectedExecutionException ex) {
+                queuedBytes.addAndGet(-bytes);
+                throw new IOException("The saved item queue is unavailable or full", ex);
+            }
+        }
+        return result;
     }
 
-    private SerializedItem deserializeItem(String data) throws IOException, ClassNotFoundException {
-        String paddedData = padBase64String(data);
-        ByteArrayInputStream inputStream = new ByteArrayInputStream(Base64.getDecoder().decode(paddedData));
-        BukkitObjectInputStream dataInput = new BukkitObjectInputStream(inputStream);
-        String name = dataInput.readUTF();
-        ItemStack item = (ItemStack) dataInput.readObject();
-        dataInput.close();
-        return new SerializedItem(name, item);
+    private void writeChange(String key, SerializedItem item, byte[] data, Path file, Object mutation,
+                             CompletableFuture<Void> result, int bytes) {
+        try {
+            final boolean alreadySaved = durable.containsKey(key);
+            if (item == null) {
+                files.delete(file);
+                durable.remove(key);
+            } else {
+                if (!alreadySaved && !ItemFiles.isDeleted(file)
+                        && (ItemFiles.exists(file) || ItemFiles.exists(ItemFiles.backup(file)))) {
+                    throw new IOException("Existing files for this item could not be loaded. They were retained.");
+                }
+                files.save(file, data, alreadySaved && !recovered.contains(key));
+                durable.put(key, item);
+            }
+            recovered.remove(key);
+            synchronized (pending) {
+                pending.remove(key, mutation);
+            }
+            result.complete(null);
+        } catch (IOException | RuntimeException ex) {
+            rollback(key, mutation, result, ex);
+        } finally {
+            queuedBytes.addAndGet(-bytes);
+        }
+    }
+
+    private void rollback(String key, Object mutation, CompletableFuture<Void> result, Exception error) {
+        plugin.getLogger().log(Level.SEVERE, "Could not update saved item '" + key + "'", error);
+        if (plugin.isEnabled()) {
+            try {
+                Bukkit.getScheduler().runTask(plugin, () -> {
+                    if (pending.remove(key, mutation)) setItem(key, durable.get(key));
+                    result.completeExceptionally(error);
+                });
+                return;
+            } catch (IllegalPluginAccessException ignored) {
+                // The plugin may stop between checking and scheduling.
+            }
+        }
+        result.completeExceptionally(error);
+    }
+
+    private void setItem(String name, SerializedItem item) {
+        if (item == null) storedItems.remove(name);
+        else storedItems.put(name, item);
+        sortedCache = null;
+    }
+
+    static String serializeItem(SerializedItem item) throws IOException {
+        final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (BukkitObjectOutputStream output = new BukkitObjectOutputStream(bytes)) {
+            output.writeUTF(item.getName());
+            output.writeObject(item.getItemStack());
+            output.writeUTF(item.getCategory() == null ? "" : item.getCategory());
+        }
+        if (bytes.size() > ItemFiles.MAX_PAYLOAD / 4 * 3) throw new IOException("Item exceeds the size limit");
+        return Base64.getEncoder().encodeToString(bytes.toByteArray());
+    }
+
+    static SerializedItem deserializeItem(String data) throws IOException, ClassNotFoundException {
+        if (data.length() > ItemFiles.MAX_PAYLOAD) throw new IOException("Item exceeds the size limit");
+        final byte[] bytes = Base64.getDecoder().decode(data);
+        try (BukkitObjectInputStream input = new BukkitObjectInputStream(new ByteArrayInputStream(bytes))) {
+            input.setObjectInputFilter(info -> info.depth() > 96 || info.references() > 100_000
+                    || info.arrayLength() > ItemFiles.MAX_PAYLOAD || info.streamBytes() > ItemFiles.MAX_PAYLOAD
+                    ? ObjectInputFilter.Status.REJECTED : ObjectInputFilter.Status.UNDECIDED);
+            final String name = input.readUTF();
+            final ItemStack item = (ItemStack) input.readObject();
+            if (name.trim().isEmpty() || item == null) throw new IOException("Invalid saved item");
+            String category = null;
+            try {
+                category = input.readUTF();
+            } catch (EOFException ignored) {
+                // The legacy format ended directly after the item.
+            }
+            return new SerializedItem(name, item, category == null || category.isEmpty() ? null : category);
+        }
     }
 
     private String cleanName(String name) {

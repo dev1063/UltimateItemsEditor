@@ -43,9 +43,37 @@ apagados muestran cristal naranja. Si un archivo anterior carece de `modules.con
 de `modules.custom-commands`. `triggers.enabled`, `consumables.enabled` y `customitems.enabled` controlan funciones dentro de los módulos.
 
 - **Editar lo que sostienes:** `/ie edit`. El editor recuerda la pestaña y página. Usa **Finalizar** para devolver el ítem editado a la mano.
-- **Administrar ítems guardados:** `/ie save <nombre>` guarda una copia. `/ie manage` o `/ie list` abre la lista paginada para previsualizar, obtener, entregar, editar o borrar. Las plantillas se pueden aplicar a un ítem o a toda la lista cuando el módulo vanilla está activo.
+- **Administrar ítems guardados:** `/ie manage` y `/ie list` abren el gestor por categorías.
 - **Configurar comportamiento:** en **Comportamiento**, elige **Ítems personalizados** o **Consumibles**. Puedes crear una definición a partir de una copia del ítem editado o elegir una existente. Las definiciones se guardan al aplicar cada cambio.
 - **Configurar sonidos de la interfaz:** `gui.click-sounds` controla el sonido de clic.
+
+### Guardar y organizar ítems
+
+1. Sostén el ítem en la mano principal y ejecuta `/ie save <nombre>`.
+2. Elige una categoría en el menú. Si ya existe una entrada con ese nombre, confirma el reemplazo.
+3. Desde `/ie manage`, entra en una categoría para previsualizar, obtener, entregar, editar, mover o borrar un ítem. **Todos los ítems** muestra la colección completa y conserva el botón para aplicar una plantilla al conjunto.
+
+El guardado conserva una copia del ítem del momento en que ejecutaste el comando y confirma el resultado cuando termina la escritura en disco. Los ítems de versiones anteriores aparecen en **Sin categoría**. Desde la ficha de un ítem, usa **Mover de categoría** para reasignarlo. `/ie get <nombre>`, `/ie give` y `/ie list plain` siguen funcionando por nombre.
+
+Cambia las categorías en `plugins/UltimateItemsEditor/config.yml` y reinicia el servidor. Vienen preparadas **Armas**, **Armaduras**, **Herramientas**, **Consumibles**, **Materiales** y **Otros**. Si tu archivo ya existía, añade la sección `saved-item-categories` para personalizarla. Incluye en la sección cada categoría que quieras mostrar.
+
+```yaml
+saved-item-categories:
+  premios_evento:
+    name: "Premios de evento"
+    icon: NETHER_STAR
+    description: "Recompensas de torneos y misiones"
+    order: 10
+    enabled: true
+```
+
+El ID `premios_evento` identifica la categoría en disco. Conserva el ID si quieres cambiar el nombre visible, el icono, la descripción o el orden. Los ítems de una categoría retirada o desactivada aparecen en **Sin categoría** y regresan a su grupo al reactivar el mismo ID.
+
+#### Recuperación de ítems guardados
+
+El plugin escribe cada cambio en un archivo temporal, fuerza su escritura a disco y lo mueve de forma atómica. Antes de reemplazar un ítem existente, conserva su versión anterior como `.bak`. Al arrancar, comprueba la integridad de los archivos nuevos y recupera el respaldo si falta el archivo principal o está dañado. Los borrados confirmados también se registran en disco para que la recuperación respete la eliminación.
+
+El plugin lee los archivos antiguos y los convierte al nuevo formato al volver a guardarlos. Si necesitas volver a una versión anterior del plugin, utiliza una copia de `items/` tomada antes de actualizar. El almacenamiento requiere un sistema de archivos que admita movimientos atómicos.
 
 ### Componentes y conjuntos vanilla
 
@@ -256,6 +284,35 @@ En **Comportamiento → Ítems personalizados**, crea una definición y añade h
 /ie customitem give espada_ardiente Steve 1
 ```
 
+### Habilidades contra MythicMobs
+
+Con MythicMobs 5 instalado, reinicia el servidor para habilitar la integración opcional. Puedes apagarla con
+`integrations.mythicmobs.enabled: false` y `/ie rules reload`. Sin integración activa, `mythic-mob` devuelve falso
+y la habilidad que lo exige queda inactiva. Las demás habilidades siguen funcionando.
+
+En **Comportamiento → Ítems personalizados**, crea una habilidad con activador `ATTACK`. Añade la condición
+**Objetivo MythicMobs** e introduce el ID interno definido en MythicMobs, por ejemplo `FrostGuardian`. Añade
+**Robar vida al atacar** o **Congelar al atacar**. También puedes editar el archivo de la habilidad:
+
+```yaml
+skills:
+  cazar_guardian:
+    trigger: ATTACK
+    slots: hand
+    cooldown: 3s
+    conditions:
+      - mythic-mob: [FrostGuardian, IceBoss]
+      - melee: true
+    actions:
+      - lifesteal: {percent: 25, max-heal: 4}
+      - freeze-target: 2s
+```
+
+`melee: true` limita el ejemplo a golpes cuerpo a cuerpo. Los IDs se comparan sin distinguir mayúsculas y pueden
+ir individualmente o en una lista. El robo de vida cura un porcentaje del daño final, con un máximo configurable
+en puntos de salud. La congelación aplica hielo y lentitud intensa. Ambos efectos comprueban que el golpe no se
+canceló y causó daño. Las consultas a MythicMobs se realizan solo cuando una regla necesita esa condición.
+
 ### Reglas y acciones
 
 Los archivos de `rules/` vinculan reglas a `item: <id>` o `enchant: <id>`. Una regla sin vínculo aplica de forma general. Usa `slots` para seleccionar el equipo que puede activarla y `materials` para filtrar el material antes de leer sus etiquetas.
@@ -290,7 +347,7 @@ El permiso administrativo es **`ie.*`**. `/ie`, `/uie` y `/itemeditor` son alias
 | Comando | Función |
 | --- | --- |
 | `/ie edit`, `/ie reopen` | Abrir el editor o reabrir el último ítem. |
-| `/ie save <nombre>`, `/ie get <nombre>`, `/ie delete <nombre>` | Guardar, obtener o borrar una entrada. |
+| `/ie save <nombre>`, `/ie get <nombre>`, `/ie delete <nombre>` | Abrir el selector de guardado, obtener o borrar una entrada. |
 | `/ie give <jugador> <ítem> <cantidad>` | Entregar un ítem guardado. |
 | `/ie manage`, `/ie list [plain]` | Abrir el gestor o listar los ítems guardados. |
 | `/ie template [apply\|reset\|list\|inspect\|reload]` | Configurar plantillas para el ítem o consultar las disponibles. |
@@ -306,7 +363,7 @@ Las rutas de esta tabla son relativas a `plugins/UltimateItemsEditor/`.
 
 | Ruta | Contenido |
 | --- | --- |
-| `config.yml` | Módulos, idioma, plantillas, adquisición y rendimiento. |
+| `config.yml` | Módulos, idioma, categorías de ítems, plantillas, adquisición y rendimiento. |
 | `custom-enchantments.yml` | Catálogo, rarezas, niveles y efectos. |
 | `armor-sets.yml` | Bonos de atributo para conjuntos parciales y completos. |
 | `rules/*.yml` | Reglas adicionales para eventos. |

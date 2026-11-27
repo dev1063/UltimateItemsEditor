@@ -7,6 +7,8 @@ import at.dumphey.itemeditor.events.InventoryClickListener;
 import at.dumphey.itemeditor.events.PlayerChatListener;
 import at.dumphey.itemeditor.events.PlayerQuitListener;
 import at.dumphey.itemeditor.itemeditor.ItemEditor;
+import at.dumphey.itemeditor.itemeditor.storage.SavedItemCategories;
+import org.bukkit.configuration.file.FileConfiguration;
 import at.dumphey.itemeditor.itemeditor.modules.components.ArmorSets;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.ServicePriority;
@@ -24,6 +26,8 @@ public final class UltimateItemsEditor extends JavaPlugin {
     private static UltimateItemsEditor instance;
     private PluginModules modules;
     private ArmorSets armorSets;
+    private FileConfiguration categoriesConfig;
+    private SavedItemCategories savedItemCategories;
 
     public static UltimateItemsEditor getInstance() {
         return instance;
@@ -73,6 +77,15 @@ public final class UltimateItemsEditor extends JavaPlugin {
         if (modules.vanilla() && isPlaceholderApiEnabled()) {
             getLogger().info("Enabled PlaceholderAPI support.");
         }
+    }
+
+    public SavedItemCategories savedItemCategories() {
+        final FileConfiguration config = getConfig();
+        if (config != categoriesConfig) {
+            savedItemCategories = SavedItemCategories.fromConfig(config);
+            categoriesConfig = config;
+        }
+        return savedItemCategories;
     }
 
     public ArmorSets armorSets() {

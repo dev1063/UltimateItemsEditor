@@ -6,7 +6,7 @@ prefix: UltimateItemsEditor
 authors: [ Dumphey ]
 description: 'Ultimate items editor: item editor, saved items manager and configurable item templates.'
 website: https://www.spigotmc.org/members/dumphey.42048/
-softdepend: [ PlaceholderAPI ]
+softdepend: [ PlaceholderAPI, MythicMobs ]
 commands:
   ultimateitemseditor:
     description: UltimateItemsEditor management command

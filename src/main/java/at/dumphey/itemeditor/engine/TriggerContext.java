@@ -1,5 +1,7 @@
 package at.dumphey.itemeditor.engine;
 
+import java.util.Locale;
+
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.entity.Entity;
@@ -24,6 +26,8 @@ public final class TriggerContext {
     public Player player;
     /** The other side: victim / attacker / killed entity. */
     public Entity target;
+    private Entity mythicLookupTarget;
+    private String mythicTargetId;
     public Block block;
     public ClickKind click;
     /** The item involved and the slot it is in. */
@@ -48,6 +52,8 @@ public final class TriggerContext {
         event = null;
         player = null;
         target = null;
+        mythicLookupTarget = null;
+        mythicTargetId = null;
         block = null;
         click = null;
         item = null;
@@ -62,6 +68,15 @@ public final class TriggerContext {
         cooldownLeftMs = 0;
         location = null;
         damageValue = Double.NaN;
+    }
+
+    String mythicTargetId() {
+        if (target != mythicLookupTarget) {
+            mythicLookupTarget = target;
+            final String id = engine == null || target == null ? null : engine.mythicId(target);
+            mythicTargetId = id == null ? null : id.toLowerCase(Locale.ROOT);
+        }
+        return mythicTargetId;
     }
 
     public TriggerEngine engine() {
@@ -141,6 +156,8 @@ public final class TriggerContext {
         copy.type = type;
         copy.player = player;
         copy.target = target;
+        copy.mythicLookupTarget = mythicLookupTarget;
+        copy.mythicTargetId = mythicTargetId;
         copy.block = block;
         copy.click = click;
         copy.item = item == null ? null : item.clone();

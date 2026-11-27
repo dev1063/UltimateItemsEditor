@@ -21,11 +21,13 @@ import java.util.logging.Level;
 public class ManageItemFromListUiItem extends UiItem {
 
     private final SerializedItem item;
+    private final String listCategory;
     private final int listPage;
 
-    public ManageItemFromListUiItem(UiScreen screen, Player player, SerializedItem item, int listPage) {
+    public ManageItemFromListUiItem(UiScreen screen, Player player, SerializedItem item, String listCategory, int listPage) {
         super(screen, player);
         this.item = item;
+        this.listCategory = listCategory;
         this.listPage = listPage;
     }
 
@@ -62,7 +64,7 @@ public class ManageItemFromListUiItem extends UiItem {
     @Override
     protected void onClick(ClickType clickType) {
         if (clickType.isLeftClick() || clickType.isRightClick()) {
-            open(new ItemActionsUiScreen(player, item.getName(), listPage));
+            open(new ItemActionsUiScreen(player, item.getName(), listCategory, listPage));
         }
     }
 }

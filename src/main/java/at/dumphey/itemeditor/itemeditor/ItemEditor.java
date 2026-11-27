@@ -14,6 +14,7 @@ import at.dumphey.itemeditor.styler.StyleService;
 import at.dumphey.itemeditor.styler.model.Template;
 import at.dumphey.itemeditor.ui.prompts.PromptHandler;
 import at.dumphey.itemeditor.ui.UiManager;
+import at.dumphey.itemeditor.ui.template.UiScreen;
 import at.dumphey.itemeditor.utils.ItemBuilder;
 import at.dumphey.itemeditor.utils.Messages;
 import me.clip.placeholderapi.PlaceholderAPI;
@@ -26,10 +27,14 @@ import org.bukkit.inventory.ItemStack;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.logging.Level;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class ItemEditor implements Listener {
@@ -50,10 +55,15 @@ public class ItemEditor implements Listener {
 
     private static class SavedEdit {
         private final String name;
+        private SerializedItem original;
+        private final String listCategory;
         private final int listPage;
+        private boolean saving;
 
-        private SavedEdit(String name, int listPage) {
-            this.name = name;
+        private SavedEdit(SerializedItem original, String listCategory, int listPage) {
+            this.name = original.getName();
+            this.original = original;
+            this.listCategory = listCategory;
             this.listPage = listPage;
         }
     }
@@ -102,11 +112,11 @@ public class ItemEditor implements Listener {
      * Opens the editor for a saved item. The player's hand is not touched; the changes are written back to the
      * saved entry when they finish (see {@link #finish(Player)}) or discarded on {@link #cancelSavedEdit(Player)}.
      */
-    public void editSaved(Player player, SerializedItem saved, int listPage) {
+    public void editSaved(Player player, SerializedItem saved, String listCategory, int listPage) {
         if (!modules.itemEditor()) {
             return;
         }
-        editingSaved.put(player.getUniqueId(), new SavedEdit(saved.getName(), listPage));
+        editingSaved.put(player.getUniqueId(), new SavedEdit(saved, listCategory, listPage));
         setItem(player, saved.getItemStack().clone()); // clone: the editor mutates the stack in place
         uiManager.open(player, new HomeUiScreen(player));
     }
@@ -127,25 +137,48 @@ public class ItemEditor implements Listener {
             uiManager.close(player);
             return;
         }
-        uiManager.open(player, new ItemActionsUiScreen(player, edit.name, edit.listPage));
+        uiManager.open(player, new ItemActionsUiScreen(player, edit.name, edit.listCategory, edit.listPage));
     }
 
     private void saveEditedItem(Player player) {
-        final SavedEdit edit = editingSaved.get(player.getUniqueId());
-        try {
-            itemStorage.saveItem(edit.name, getItem(player).clone());
-        } catch (IOException e) {
-            at.dumphey.itemeditor.UltimateItemsEditor.getInstance().getLogger()
-                    .log(Level.SEVERE, "Could not save item " + edit.name, e);
-            Messages.send(player, "§cSaving failed. Your changes are still open in the editor - check the console.");
+        final UUID playerId = player.getUniqueId();
+        final SavedEdit edit = editingSaved.get(playerId);
+        if (edit.saving) return;
+        if (itemStorage.getItem(edit.name) != edit.original) {
+            Messages.send(player, "§cLa entrada cambió mientras la editabas. Tus cambios siguen en el editor.");
             return;
         }
 
-        editingSaved.remove(player.getUniqueId());
-        editing.remove(player.getUniqueId());
-        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1, 1);
-        Messages.send(player, "Saved changes to §7" + edit.name + "§f.");
-        uiManager.open(player, new ItemActionsUiScreen(player, edit.name, edit.listPage));
+        final UltimateItemsEditor plugin = UltimateItemsEditor.getInstance();
+        final UiScreen screen = uiManager.getScreen(player);
+        final ItemStack snapshot = getItem(player).clone();
+        edit.saving = true;
+        try {
+            final CompletableFuture<Void> saved = itemStorage.saveItem(edit.name, snapshot);
+            final SerializedItem accepted = itemStorage.getItem(edit.name);
+            saved.whenCompleteAsync((result, error) -> {
+                edit.saving = false;
+                if (!player.isOnline() || editingSaved.get(playerId) != edit) return;
+                if (error != null) {
+                    Messages.send(player, "§cError de guardado. Tus cambios siguen en el editor.");
+                    return;
+                }
+                edit.original = accepted;
+                Messages.send(player, "§aCambios guardados en §f" + edit.name + "§a.");
+                if (uiManager.getScreen(player) == screen && snapshot.equals(getItem(player))) {
+                    editingSaved.remove(playerId);
+                    editing.remove(playerId);
+                    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_USE, 1, 1);
+                    if (screen != null && screen.isInventory(player.getOpenInventory().getTopInventory())) {
+                        uiManager.open(player, new ItemActionsUiScreen(player, edit.name, edit.listCategory, edit.listPage));
+                    }
+                }
+            }, itemStorage.mainThreadExecutor());
+        } catch (IOException | IllegalStateException e) {
+            edit.saving = false;
+            plugin.getLogger().log(Level.SEVERE, "Could not save item " + edit.name, e);
+            Messages.send(player, "§cError de guardado. Tus cambios siguen en el editor.");
+        }
     }
 
     /**
@@ -251,45 +284,50 @@ public class ItemEditor implements Listener {
         return styleService;
     }
 
-    /** Applies a template to a saved item and stores the result. Returns false if it is missing or cannot be saved. */
-    public boolean applyTemplateToSaved(String name, Template template) {
-        final SerializedItem saved = itemStorage.getItem(name);
-        if (saved == null) {
-            return false;
-        }
-        final ItemStack copy = saved.getItemStack().clone();
-        return styleService.apply(copy, template) && saveQuietly(name, copy);
+    public CompletableFuture<Boolean> applyTemplateToSaved(String name, Template template) {
+        return modifySavedItem(name, item -> styleService.apply(item, template));
     }
 
-    /** Takes the template off a saved item. Returns false if it has none, is missing or cannot be saved. */
-    public boolean resetTemplateOfSaved(String name) {
-        final SerializedItem saved = itemStorage.getItem(name);
-        if (saved == null) {
-            return false;
-        }
-        final ItemStack copy = saved.getItemStack().clone();
-        return styleService.reset(copy) && saveQuietly(name, copy);
+    public CompletableFuture<Boolean> resetTemplateOfSaved(String name) {
+        return modifySavedItem(name, styleService::reset);
     }
 
-    /** Applies a template to every saved item. Returns how many items were updated. */
-    public int applyTemplateToAllSaved(Template template) {
-        int count = 0;
-        for (SerializedItem saved : new ArrayList<>(itemStorage.getItems())) {
-            if (applyTemplateToSaved(saved.getName(), template)) {
-                count++;
+    public CompletableFuture<Integer> applyTemplateToAllSaved(Template template) {
+        final CompletableFuture<Integer> result = new CompletableFuture<>();
+        applyTemplateBatch(template, itemStorage.getSortedItems().iterator(), 0, result);
+        return result;
+    }
+
+    private void applyTemplateBatch(Template template, Iterator<SerializedItem> items, int applied,
+                                    CompletableFuture<Integer> result) {
+        final List<CompletableFuture<Boolean>> batch = new ArrayList<>();
+        for (int scanned = 0; scanned < 32 && items.hasNext(); scanned++) {
+            final SerializedItem item = items.next();
+            if (itemStorage.getItem(item.getName()) == item) {
+                batch.add(applyTemplateToSaved(item.getName(), template).exceptionally(error -> false));
             }
         }
-        return count;
+        CompletableFuture.allOf(batch.toArray(new CompletableFuture<?>[0])).thenRunAsync(() -> {
+            final int total = applied + (int) batch.stream().filter(CompletableFuture::join).count();
+            if (items.hasNext()) applyTemplateBatch(template, items, total, result);
+            else result.complete(total);
+        }, itemStorage.mainThreadExecutor());
     }
 
-    private boolean saveQuietly(String name, ItemStack item) {
+    private CompletableFuture<Boolean> modifySavedItem(String name, Predicate<ItemStack> modify) {
+        final SerializedItem saved = itemStorage.getItem(name);
+        if (saved == null || saved.getItemStack().getType().isAir()) {
+            return CompletableFuture.completedFuture(false);
+        }
         try {
-            itemStorage.saveItem(name, item);
-            return true;
-        } catch (IOException e) {
-            at.dumphey.itemeditor.UltimateItemsEditor.getInstance().getLogger()
-                    .log(Level.SEVERE, "Could not save item " + name, e);
-            return false;
+            final ItemStack copy = saved.getItemStack().clone();
+            if (!modify.test(copy)) return CompletableFuture.completedFuture(false);
+            return itemStorage.saveItem(name, copy).thenApply(result -> true);
+        } catch (IOException | RuntimeException e) {
+            UltimateItemsEditor.getInstance().getLogger().log(Level.WARNING, "Could not save item " + name, e);
+            final CompletableFuture<Boolean> failed = new CompletableFuture<>();
+            failed.completeExceptionally(e);
+            return failed;
         }
     }
 

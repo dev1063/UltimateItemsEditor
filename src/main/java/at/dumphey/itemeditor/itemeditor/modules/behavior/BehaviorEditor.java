@@ -206,7 +206,7 @@ public final class BehaviorEditor {
         }
         menu.button(45, Material.LIME_DYE, "Crear habilidad", () ->
                 input("Escribe el ID de la habilidad.", name -> triggers("Activador de la habilidad", back, trigger ->
-                        chooseEntry(false, (type, value) -> change(
+                        chooseEntry(false, true, (type, value) -> change(
                                 () -> customItems().addSkill(id, name.trim(), trigger.name(), type, value),
                                 () -> skill(id, name.trim())), back)), back));
         menu.button(53, Material.CHEST, "Recibir 1 ítem personalizado", () -> change(() -> {
@@ -315,7 +315,7 @@ public final class BehaviorEditor {
                         value -> consumables().addCommand(id, value), back);
                 return;
             }
-            chooseEntry(conditions, (type, value) -> change(() -> {
+            chooseEntry(conditions, custom, (type, value) -> change(() -> {
                 if (custom) {
                     customItems().addEntry(id, skill, list, type, value);
                 } else if (conditions) {
@@ -328,13 +328,17 @@ public final class BehaviorEditor {
         show(menu);
     }
 
-    private void chooseEntry(boolean condition, BiConsumer<String, Object> add, Runnable back) {
+    private void chooseEntry(boolean condition, boolean skill, BiConsumer<String, Object> add, Runnable back) {
         final Menu menu = new Menu(condition ? "Añadir condición" : "Añadir acción", back);
         if (condition) {
             branch(menu, Material.LEATHER_BOOTS, "Agachado", "sneaking", add);
             branch(menu, Material.FEATHER, "Esprintando", "sprinting", add);
             branch(menu, Material.ELYTRA, "Volando", "flying", add);
             branch(menu, Material.PLAYER_HEAD, "Objetivo jugador", "target-player", add);
+            if (skill && engine.hasMythicMobs()) {
+                text(menu, Material.SPAWNER, "Objetivo MythicMobs", "mythic-mob",
+                        "Escribe el ID interno del mob, por ejemplo FrostGuardian.", add);
+            }
             text(menu, Material.TRIPWIRE_HOOK, "Permiso", "permission", "Escribe el nodo de permiso.", add);
             text(menu, Material.GRASS_BLOCK, "Mundo", "world", "Escribe el nombre del mundo.", add);
             text(menu, Material.PAPER, "Probabilidad", "chance", "Escribe un porcentaje de 0 a 100.", add);
@@ -360,6 +364,12 @@ public final class BehaviorEditor {
             menu.choice(Material.NOTE_BLOCK, "Sonido", () -> sounds(add, () -> show(menu)));
             menu.choice(Material.BLAZE_POWDER, "Partículas", () -> particles(add, () -> show(menu)));
             menu.choice(Material.POTION, "Efecto de poción", () -> potion(add, () -> show(menu)));
+            if (skill) {
+                text(menu, Material.GHAST_TEAR, "Robar vida al atacar", "lifesteal",
+                        "Escribe el porcentaje del daño final que se convierte en curación (1–100).", add);
+                text(menu, Material.ICE, "Congelar al atacar", "freeze-target",
+                        "Escribe una duración entre 1t y 10s, por ejemplo 2s.", add);
+            }
             text(menu, Material.GOLDEN_APPLE, "Curar", "heal", "Escribe los puntos de salud que se recuperan.", add);
         }
         show(menu);

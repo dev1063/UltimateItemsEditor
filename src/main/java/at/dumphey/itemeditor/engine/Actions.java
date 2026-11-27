@@ -262,12 +262,37 @@ public final class Actions {
                 final Entity e = target.resolve(ctx);
                 if (e instanceof LivingEntity) {
                     final LivingEntity living = (LivingEntity) e;
-                    final Attribute health = at.dumphey.itemeditor.compatibility.VersionUtils.maxHealthAttribute();
-                    final AttributeInstance max = health == null ? null : living.getAttribute(health);
-                    final double limit = max == null ? 20.0 : max.getValue();
-                    living.setHealth(Math.max(0, Math.min(limit, living.getHealth() + amount)));
+                    healBy(living, amount);
                 }
             };
+        });
+
+        engine.registerAction("lifesteal", (cfg, pc) -> {
+            final Map<String, Object> map = Cfg.map(cfg);
+            if (map != null) Cfg.checkKeys(map, pc, "percent", "max-heal");
+            final double percent = Cfg.number(map == null ? cfg : map.get("percent"), pc.child("percent"));
+            final double cap = map == null ? 4 : Cfg.number(map.getOrDefault("max-heal", 4), pc.child("max-heal"));
+            if (!Double.isFinite(percent) || percent <= 0 || percent > 100
+                    || !Double.isFinite(cap) || cap <= 0 || cap > 20) {
+                throw pc.error("percent must be > 0 and <= 100; max-heal must be > 0 and <= 20");
+            }
+            final TriggerEngine.ConfirmedHit effect = (player, target, damage) ->
+                    healBy(player, Math.min(cap, damage * percent / 100.0));
+            return ctx -> ctx.engine().afterAttack(ctx, effect);
+        });
+
+        engine.registerAction("freeze-target", (cfg, pc) -> {
+            final int ticks = TimeParser.parseTicks(cfg, 1000, pc);
+            if (ticks < 1 || ticks > 200) throw pc.error("duration must be between 1t and 10s");
+            final PotionEffectType slow = potionType("slowness");
+            if (slow == null) throw pc.error("this server does not expose the Slowness potion effect");
+            final PotionEffect slowness = new PotionEffect(slow, ticks, 4);
+            final TriggerEngine.ConfirmedHit effect = (player, target, damage) -> {
+                if (!target.isValid() || target.isDead()) return;
+                target.setFreezeTicks(Math.max(target.getFreezeTicks(), target.getMaxFreezeTicks()));
+                target.addPotionEffect(slowness);
+            };
+            return ctx -> ctx.engine().afterAttack(ctx, effect);
         });
 
         engine.registerAction("feed", (cfg, pc) -> {
@@ -481,6 +506,13 @@ public final class Actions {
             throw pc.error("missing 'amount'");
         }
         return new Object[]{Cfg.number(map.get("amount"), pc.child("amount")), who(map.get("target"), def, pc.child("target"))};
+    }
+
+    private static void healBy(LivingEntity entity, double amount) {
+        final Attribute health = at.dumphey.itemeditor.compatibility.VersionUtils.maxHealthAttribute();
+        final AttributeInstance max = health == null ? null : entity.getAttribute(health);
+        final double limit = max == null ? 20.0 : max.getValue();
+        entity.setHealth(Math.max(0, Math.min(limit, entity.getHealth() + amount)));
     }
 
     private static Particle particleByName(String name, ParseContext pc) throws ConfigException {

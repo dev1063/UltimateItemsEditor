@@ -241,6 +241,20 @@ public final class Conditions {
             }
             return ctx -> ctx.block != null && materials.contains(ctx.block.getType().name());
         });
+        engine.registerCondition("mythic-mob", (cfg, pc) -> {
+            final Set<String> ids = new java.util.HashSet<>();
+            for (Object value : Cfg.list(cfg)) {
+                if (!(value instanceof String) || ((String) value).trim().isEmpty()) {
+                    throw pc.error("expected a MythicMobs internal ID");
+                }
+                ids.add(((String) value).trim().toLowerCase(Locale.ROOT));
+            }
+            if (ids.isEmpty()) throw pc.error("expected one or more MythicMobs internal IDs");
+            return ctx -> {
+                final String id = ctx.mythicTargetId();
+                return id != null && ids.contains(id);
+            };
+        });
         engine.registerCondition("target-type", (cfg, pc) -> {
             final Set<String> types = Cfg.upperSet(cfg);
             if (types.isEmpty()) {
